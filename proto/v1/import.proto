@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+
+message File {
+  string fileName = 1;
+  int64 fileSize = 2;
+  bytes data = 3; 
+}
+
+
+// FileResponse
+message FileResponse {
+  int64 code = 1;
+  string message = 2 ;
+  File  file = 3;
+}
+
+// 导入请求
+message ImportRequest {
+  File  file = 1;
+}
+
+// 导入返回
+message ImportResponse {
+  FileResponse Response = 1;
+}
+// 导出请求
+message ExportRequest {
+  // 请求参数或过滤参数
+  string params = 1;
+}
+// 导出返回
+message ExportResponse {
+  FileResponse Response = 1;
+}
+
+// 新增请求
+message CreateRequest {
+
+}
+// 新增返回
+message CreateResponse {
+
+}
+// 修改请求
+message UpdateRequest {
+
+}
+
+
+// 修改返回
+message UpdateResponse {
+
+}
+
+
+// 查询请求
+message QueryRequest {
+
+}
+
+// 查询返回
+message QueryResponse {
+
+}
+
+// 删除请求
+message DeleteRequest {
+
+}
+// 删除返回
+message DeleteResponse {
+
+}
+
+
+// ExcelImportService
+service ExcelImportService {
+  rpc Import(ImportRequest) returns (ImportResponse);
+  rpc Export(ExportRequest) returns (ExportResponse);
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+  rpc Queury(QueryRequest) returns (QueryResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+}
