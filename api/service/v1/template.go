@@ -7,68 +7,73 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
-// Excel Excel
-type Excel struct{}
+// Template Template
+type Template struct {
+	// 模型名称
+	TableEnName string
+}
 
-// NewExcel NewExcel
-func NewExcel() *Excel {
-	return &Excel{}
+// NewTemplate NewTemplate
+func NewTemplate() *Template {
+	return &Template{}
 }
 
 // OpenFile OpenFile
-func (e *Excel) OpenFile(filePath string) (f *excelize.File, err error) {
+func (e *Template) openFile(filePath string) (f *excelize.File, err error) {
 	f, err = excelize.OpenFile(filePath)
 	return
 }
 
-// ReadExcel ReadExcel
-func (e *Excel) ReadExcel() error {
+// ReadTemplate ReadTemplate
+func (e *Template) ReadTemplate(excelPath string) (createTableSQL string, insertSQL string, err error) {
 	// 运行时的目录为主
-	f, err := e.OpenFile("./template/template_test.xlsx")
+	f, err := e.openFile(excelPath) // "./template/template_test.xlsx"
 	if err != nil {
 		fmt.Printf("open file error: %s\n", err)
-		return err
+		return "", "", err
 	}
 	// 获取第一个sheet名称
 	firstSheetName := f.GetSheetName(0)
 	// 获取行数
 	rows, err := f.GetRows(firstSheetName)
-	e.RowsHandle(rows)
+	createTableSQL, insertSQL = e.rowsHandle(rows)
 
-	return nil
+	return
 }
 
 // RowsHandle 行数据处理
-func (e *Excel) RowsHandle(rows [][]string) error {
+func (e *Template) rowsHandle(rows [][]string) (createTableSQL string, insertSQL string) {
 	// 表单名称
-	tableName := e.GetTableName(rows[0])
+	tableName := e.getTableName(rows[0])
 	// 表单英文名称
-	tableEnName := e.GetTableEnName(rows[1])
+	tableEnName := e.getTableEnName(rows[1])
 	// 字段备注
 	fieldsName := rows[2]
 	// 字段名称
 	fieldsEnName := rows[3]
 	// 字段类型
 	fieldsType := rows[4]
+	// 设置表名
+	e.TableEnName = tableEnName
 
 	fmt.Printf("模版名称:%s , 数据表名称: %s\n", tableName, tableEnName)
 	fmt.Printf("字段名称:%#v , 字段英文名称: %#v\n", fieldsName, fieldsEnName)
 	fmt.Printf("字段类型:%#v \n", fieldsType)
 	//
-	createTableSQL := e.CreateTable(tableName, tableEnName, fieldsName, fieldsEnName, fieldsType)
+	createTableSQL = e.createTable(tableName, tableEnName, fieldsName, fieldsEnName, fieldsType)
 	fmt.Printf("创建表SQL:\n %s \n", createTableSQL)
 	// 执行sql
-	insertData := e.GetInsertData(rows)
+	insertData := e.getInsertData(rows)
 	fmt.Printf("插入的数据:\n %s \n", insertData)
 
-	insertSQL := e.InsertToTable(tableEnName, fieldsEnName, insertData)
+	insertSQL = e.insertToTable(tableEnName, fieldsEnName, insertData)
 	fmt.Printf("\n%s\n", insertSQL)
 
-	return nil
+	return
 }
 
 // CreateTable 创建数据库
-func (e *Excel) CreateTable(tableName string, tableEnName string, fieldsName []string, fieldsEnName []string, fieldsType []string) string {
+func (e *Template) createTable(tableName string, tableEnName string, fieldsName []string, fieldsEnName []string, fieldsType []string) string {
 
 	var fieldsSQL string
 	//
@@ -83,13 +88,8 @@ func (e *Excel) CreateTable(tableName string, tableEnName string, fieldsName []s
 	return createTableSQL
 }
 
-// ExistTable 判断表名是否存在
-func (e *Excel) ExistTable(tableName string) (exists bool, err error) {
-	return false, nil
-}
-
 // GetInsertData 获取入库的数据
-func (e *Excel) GetInsertData(rows [][]string) (insertData string) {
+func (e *Template) getInsertData(rows [][]string) (insertData string) {
 	// 插入数据
 	dataRows := rows[5:]
 	for _, row := range dataRows {
@@ -106,7 +106,7 @@ func (e *Excel) GetInsertData(rows [][]string) (insertData string) {
 }
 
 // InsertToTable 数据入表
-func (e *Excel) InsertToTable(tableEnName string, fieldsEnName []string, data string) (insertSQL string) {
+func (e *Template) insertToTable(tableEnName string, fieldsEnName []string, data string) (insertSQL string) {
 	//
 	fields := strings.Join(fieldsEnName, ",")
 	// 插入数据
@@ -116,26 +116,11 @@ func (e *Excel) InsertToTable(tableEnName string, fieldsEnName []string, data st
 }
 
 // GetTableName 获取模版名称
-func (e *Excel) GetTableName(rows []string) string {
+func (e *Template) getTableName(rows []string) string {
 	return rows[0]
 }
 
 // GetTableEnName 获取模版名称
-func (e *Excel) GetTableEnName(rows []string) string {
+func (e *Template) getTableEnName(rows []string) string {
 	return rows[0]
-}
-
-// GetFieldsName 获取名称
-func (e *Excel) GetFieldsName(rows []string) {
-
-}
-
-// GetFieldEnName 获取字段名称
-func (e *Excel) GetFieldEnName(rows []string) {
-
-}
-
-// WriteExcel WriteExcel
-func (e *Excel) WriteExcel() {
-
 }
