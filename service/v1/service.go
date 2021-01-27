@@ -2,10 +2,13 @@ package v1
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
-	"github.com/linqiurong2021/go-excel-import/api/db"
+	"github.com/linqiurong2021/go-excel-import/conf"
+	"github.com/linqiurong2021/go-excel-import/db"
 )
 
 // Service Service
@@ -30,7 +33,7 @@ func (s *Service) getFields(tableName string) (fields []string, err error) {
 		return nil, err
 	}
 	defer rows.Close()
-
+	fmt.Printf("Rows:%#v\n", rows)
 	var field string
 	for rows.Next() {
 		//
@@ -39,6 +42,7 @@ func (s *Service) getFields(tableName string) (fields []string, err error) {
 		}
 		fields = append(fields, field)
 	}
+
 	return fields, nil
 }
 
@@ -148,7 +152,6 @@ func (s *Service) UpdateDataByID(tableName string, params map[string]string) (re
 // batchAddData 批量添加数据
 func (s *Service) batchAddData(tableName string, data map[string]string) (result sql.Result, err error) {
 	//
-
 	s.getFields(tableName)
 	// 数据处理
 	insertData := ""
@@ -156,4 +159,90 @@ func (s *Service) batchAddData(tableName string, data map[string]string) (result
 	batchInsertSQL := fmt.Sprintf("INSERT INTO %s(%s) VALUES %s", tableName, fields, insertData)
 	result, err = s.db.ExecuteSQLResult(batchInsertSQL)
 	return
+}
+
+// GetConfigFields 获取配置文件
+func (s *Service) getConfigFields(tableName string) (fields []string, err error) {
+	//
+	configTableName := tableName + conf.Conf.DBConfig.ConfigTableSuffix
+	return s.getFields(configTableName)
+}
+
+// GetConfig 获取配置信息
+func (s *Service) GetConfig(tableName string) (configs []map[string]string, err error) {
+	// 字段
+	fields, err := s.getConfigFields(tableName)
+	if err != nil {
+		return nil, err
+	}
+	// 获取配置数据
+	getConfigSQL := fmt.Sprintf("SELECT %s FROM %s%s ORDER BY SYS_ID", strings.Join(fields, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
+	fmt.Printf("getConfigSQL:%s\n", getConfigSQL)
+	// 执行
+	rows, err := s.db.ExecuteSQLRows(getConfigSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	// 获取类数据
+	columns, _ := rows.Columns()
+
+	// 以下代码来自官方 https://github.com/go-sql-driver/mysql/wiki/Examples
+	// Make a slice for the values
+	values := make([]sql.RawBytes, len(columns))
+	scanArgs := make([]interface{}, len(values))
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
+	var list []map[string]string
+	// Fetch rows
+	for rows.Next() {
+		err = rows.Scan(scanArgs...)
+		if err != nil {
+			panic(err.Error()) // proper error handling instead of panic in your app
+		}
+		var value string
+		var rowMap = make(map[string]string)
+		for i, col := range values {
+			if col == nil {
+				value = "NULL"
+			} else {
+				value = string(col)
+			}
+			rowMap[columns[i]] = value
+			// fmt.Println(columns[i], ": ", value)
+		}
+		list = append(list, rowMap)
+	}
+	return list, nil
+}
+
+// GetFieldTypeConfig 获取类型配置
+func (s *Service) GetFieldTypeConfig(configs []map[string]string) (jsonData string, err error) {
+	json, err := json.Marshal(configs[0])
+	if err != nil {
+		fmt.Printf("err %\n", err)
+		return "", nil
+	}
+	return string(json), nil
+}
+
+// GetSearchFieldConfig 获取搜索字段配置
+func (s *Service) GetSearchFieldConfig(configs []map[string]string) (jsonData string, err error) {
+	json, err := json.Marshal(configs[1])
+	if err != nil {
+		fmt.Printf("err %\n", err)
+		return "", nil
+	}
+	return string(json), nil
+}
+
+// GetListFieldConfig 获取列表显示字段配置
+func (s *Service) GetListFieldConfig(configs []map[string]string) (jsonData string, err error) {
+	json, err := json.Marshal(configs[2])
+	if err != nil {
+		fmt.Printf("err %\n", err)
+		return "", nil
+	}
+	return string(json), nil
 }

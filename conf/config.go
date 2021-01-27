@@ -11,10 +11,11 @@ type AppConfig struct {
 
 // DBConfig DBConfig
 type DBConfig struct {
-	Host     string `ini:"host"`
-	User     string `ini:"user"`
-	Password string `ini:"password"`
-	Sechma   string `ini:"sechma"`
+	Host              string `ini:"host"`
+	User              string `ini:"user"`
+	Password          string `ini:"password"`
+	Sechma            string `ini:"sechma"`
+	ConfigTableSuffix string `ini:"configTableSuffix"`
 }
 
 // Config 配置文件

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
+	"github.com/linqiurong2021/go-excel-import/conf"
 )
 
 // Template Template
@@ -21,6 +22,14 @@ type Template struct {
 	FieldsType []string
 }
 
+// Table 数据表
+type Table struct {
+	tableSQL        string
+	insertTableSQL  string
+	configTableSQL  string
+	insertConfigSQL string
+}
+
 // NewTemplate NewTemplate
 func NewTemplate() *Template {
 	return &Template{}
@@ -33,18 +42,18 @@ func (e *Template) openFile(filePath string) (f *excelize.File, err error) {
 }
 
 // ReadTemplate ReadTemplate
-func (e *Template) ReadTemplate(excelPath string) (createTableSQL string, insertSQL string, err error) {
+func (e *Template) ReadTemplate(excelPath string) (table *Table, err error) {
 	// 运行时的目录为主
 	f, err := e.openFile(excelPath) // "./template/template_test.xlsx"
 	if err != nil {
 		fmt.Printf("open file error: %s\n", err)
-		return "", "", err
+		return nil, err
 	}
 	// 获取第一个sheet名称
 	firstSheetName := f.GetSheetName(0)
 	// 获取行数
 	rows, err := f.GetRows(firstSheetName)
-	createTableSQL, insertSQL = e.rowsHandle(rows)
+	table = e.rowsHandle(rows)
 
 	return
 }
@@ -64,18 +73,30 @@ func (e *Template) getTemplateInfo(rows [][]string) {
 }
 
 // RowsHandle 行数据处理
-func (e *Template) rowsHandle(rows [][]string) (createTableSQL string, insertSQL string) {
+func (e *Template) rowsHandle(rows [][]string) (table *Table) {
 	// 获取基本信息
 	e.getTemplateInfo(rows)
 	// 获取新建表的SQL 语句
-	createTableSQL = e.getCreateTableSQL()
-	fmt.Printf("创建表SQL:\n %s \n", createTableSQL)
+	tableSQL := e.getCreateTableSQL()
+	fmt.Printf("创建表SQL:\n %s \n", tableSQL)
+	// 获取表单数据
+	tableData := e.getInsertData(rows)
 	// 获取插入数据的SQL 语句
-	insertData := e.getInsertData(rows)
-	//
-	insertSQL = e.getInsertSQL(e.TableEnName, e.FieldsEnName, insertData)
-	fmt.Printf("\n%s\n", insertSQL)
-	return
+	insertTableSQL := e.getInsertSQL(e.TableEnName, e.FieldsEnName, tableData)
+	configTableSQL := e.getCreateConfigTableSQL()
+	configTableData := e.getInsertConfigData(rows)
+	configTableName := fmt.Sprintf("%s%s", e.TableEnName, conf.Conf.DBConfig.ConfigTableSuffix)
+	insertConfigSQL := e.getInsertConfigSQL(configTableName, e.FieldsEnName, configTableData)
+	// 配置
+	var importTable = &Table{
+		tableSQL:        tableSQL,
+		configTableSQL:  configTableSQL,
+		insertTableSQL:  insertTableSQL,
+		insertConfigSQL: insertConfigSQL,
+	}
+
+	fmt.Printf("\n%#v\n", table)
+	return importTable
 }
 
 // GetFieldEnName 获取字段名称
@@ -108,6 +129,50 @@ func (e *Template) getTableEnName(rows [][]string) string {
 	return e.TableEnName
 }
 
+// getCreateConfigTableSQL 获取配置数据表
+func (e *Template) getCreateConfigTableSQL() string {
+	//
+	var fieldsSQL string
+	// 系统默认字段
+	systemDefaultFields := "`SYS_ID` int(1) NOT NULL AUTO_INCREMENT,\n 	PRIMARY KEY (`SYS_ID`)"
+
+	//
+	for i, field := range e.FieldsName {
+		fieldTemplate := fmt.Sprintf("	`%s` varchar(50) COMMENT '%s',\n", e.FieldsEnName[i], field) // 固定使用varchar 来存储一些数据
+		fieldsSQL += fieldTemplate
+	}
+	// 系统默认主键
+
+	fieldsSQL += systemDefaultFields // "`SYS_ID` bigint(15) NOT NULL AUTO_INCREMENT,\n PRIMARY KEY (`SYS_ID`)"
+	createTableSQL := fmt.Sprintf("CREATE TABLE `%s%s` (\n %s ) \n ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT = '%s';", e.TableEnName, conf.Conf.DBConfig.ConfigTableSuffix, fieldsSQL, e.TableName)
+
+	return createTableSQL
+}
+
+// createConfigTable 创建配置表
+func (e *Template) createConfigTable() {
+	// 获取创建表数据
+	e.getCreateConfigTableSQL()
+	// 获取
+}
+
+// getInsertData 获取入库的数据
+func (e *Template) getInsertConfigData(rows [][]string) (insertData string) {
+	// 插入数据
+	dataRows := rows[5:8]
+	for _, row := range dataRows {
+		rowData := ""
+		for _, cel := range row {
+			// 需要都转为字符串 否则在插入时会报错
+			rowData += fmt.Sprintf("'%s',", cel)
+		}
+		insertData += fmt.Sprintf("(%s),\n", strings.TrimRight(rowData, ","))
+	}
+	// 删除最后一个,
+	insertData = strings.TrimRight(insertData, ",\n")
+	return
+}
+
 // CreateTable 创建数据库
 func (e *Template) getCreateTableSQL() string {
 
@@ -131,7 +196,7 @@ func (e *Template) getCreateTableSQL() string {
 // getInsertData 获取入库的数据
 func (e *Template) getInsertData(rows [][]string) (insertData string) {
 	// 插入数据
-	dataRows := rows[5:]
+	dataRows := rows[8:]
 	for _, row := range dataRows {
 		rowData := ""
 		for _, cel := range row {
@@ -147,6 +212,16 @@ func (e *Template) getInsertData(rows [][]string) (insertData string) {
 
 // getInsertSQL 数据入表
 func (e *Template) getInsertSQL(tableEnName string, fieldsEnName []string, data string) (insertSQL string) {
+	//
+	fields := strings.Join(fieldsEnName, ",")
+	// 插入数据
+	insertSQL = fmt.Sprintf("INSERT INTO `%s` (%s) VALUES \n %s ", tableEnName, fields, data)
+
+	return
+}
+
+// getInsertSQL 数据配置入表
+func (e *Template) getInsertConfigSQL(tableEnName string, fieldsEnName []string, data string) (insertSQL string) {
 	//
 	fields := strings.Join(fieldsEnName, ",")
 	// 插入数据
