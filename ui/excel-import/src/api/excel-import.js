@@ -17,9 +17,9 @@ const getSelectOptions = (data)=> {
   })
 }
 // 获取表单列表分页
-const getTableListByPage = ( data ) => {
+const getListByPage = ( data ) => {
   return axios.request({
-    url:"/getTableListByPage",
+    url:"/getListByPage",
     method: 'post',
     data
   })
@@ -29,5 +29,5 @@ const getTableListByPage = ( data ) => {
 export {
   getConfig,
   getSelectOptions,
-  getTableListByPage
+  getListByPage
 }

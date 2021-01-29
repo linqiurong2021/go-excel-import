@@ -10,27 +10,44 @@ import List from "./list/index.vue"
 import Search from "./search/index.vue"
 
 import {getConfig} from '../api/excel-import.js'
-
+import { mapGetters } from "vuex"
 export default {
   name: 'ExcelImport',
   components: {
     Search,List
   },
-  created() {
-    let tableName = "TemplateTest"
-    console.error(tableName,'tableName')
-    getConfig({table: tableName}).then((res)=>{
-      let data = res.data
-      if (data.length >= 3) {
-        this.fieldType = data[0]
-        this.searchConfig = data[1]
-        this.listConfig = data[2]
-        this.labelName = data[3]
-      }else{
-        console.error(res,'res')
-      }
+  computed: {
+    ...mapGetters({
+      tableName: "form/getTableName",
+      tableConfigs: "form/getTableConfigs"
     })
   },
+  created() {
+    let tableName = "TemplateTest"
+    this.$store.dispatch("form/setTableName", tableName)
+    console.error(tableName,'tableName')
+  },
+  watch: {
+    tableName(newName,oldName){
+      if(newName == "") return
+      // 
+      getConfig({table: newName}).then((res)=>{
+        let data = res.data
+        this.$store.dispatch('form/setTableConfigs', res.data)
+      })
+    },
+    tableConfigs(newConfig, oldConfig){
+      if (newConfig.length >= 3) {
+        this.fieldType = newConfig[0]
+        this.searchConfig = newConfig[1]
+        this.listConfig = newConfig[2]
+        this.labelName = newConfig[3]
+      }else{
+        console.log("table config error: length less than 4 items")
+      }
+    }
+  },
+  
   data() {
     return {
       searchConfig: {},

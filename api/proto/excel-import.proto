@@ -1,0 +1,19 @@
+syntax="proto3";
+
+package v1;
+
+option go_package = ".;v1";
+
+
+message Config {
+  string Fields = 1; 
+}
+
+message GetConfigRequest {
+  string tableName = 1;
+}
+
+message GetConfigResponse {
+  repeated Config Config = 1;
+}
+

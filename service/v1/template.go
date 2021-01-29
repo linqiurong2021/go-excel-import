@@ -158,8 +158,13 @@ func (e *Template) createConfigTable() {
 
 // getInsertData 获取入库的数据
 func (e *Template) getInsertConfigData(rows [][]string) (insertData string) {
+	// 获取名称
+	fieldNames := e.getFieldName(rows)
 	// 插入数据
 	dataRows := rows[5:8]
+	// 把名称也加入
+	dataRows = append(dataRows, fieldNames)
+	//
 	for _, row := range dataRows {
 		rowData := ""
 		for _, cel := range row {

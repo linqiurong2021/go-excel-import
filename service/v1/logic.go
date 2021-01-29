@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -162,4 +163,79 @@ func (l *Logic) CreateTable(templatePath string, needBackup bool) error {
 		fmt.Printf("tableData %#v\n, Result %#v\n", table, result)
 		return tx.Commit()
 	}
+}
+
+// GetConfig 获取配置
+func (l *Logic) GetConfig(tableName string) (config []map[string]string, err error) {
+	if tableName == "" {
+		return nil, errors.New("table name must")
+	}
+	return l.service.GetConfig(tableName)
+}
+
+// GetSelectOptions 获取配置
+func (l *Logic) GetSelectOptions(tableName string, keys string) (config map[string][]string, err error) {
+	if tableName == "" {
+		return nil, errors.New("table name must")
+	}
+	if keys == "" {
+		return nil, errors.New("keys must")
+	}
+	optionsKeys := strings.Split(keys, ",")
+	fmt.Printf("%#v\n", optionsKeys)
+	if len(optionsKeys) <= 0 {
+		return nil, errors.New("keys invalidate")
+	}
+
+	return l.service.GetSelectOptions(tableName, optionsKeys)
+}
+
+// TableList TableList
+type TableList struct {
+	Total    int                 `json:"total"`
+	Page     int                 `json:"page"`
+	PageSize int                 `json:"page_size"`
+	List     []map[string]string `json:"data"`
+}
+
+// GetTableListByPage 获取分页列表
+func (l *Logic) GetTableListByPage(params map[string]string, searchFields []string, searchValues []string) (data map[string]interface{}, err error) {
+	//
+	pageSize, err := strconv.Atoi(params["page_size"])
+	if err != nil {
+		return nil, err
+	}
+	page, err := strconv.Atoi(params["page"])
+	if err != nil {
+		return nil, err
+	}
+	// 转map
+	tableName := params["table"]
+	// 获取副本
+	var searchFieldsCopy = make([]string, len(searchFields))
+	var searchFieldsType []string
+	fmt.Printf("before %#v\n %#v\n", searchFieldsCopy, searchFields)
+	count := copy(searchFieldsCopy, searchFields)
+	fmt.Printf("count: %d\n,searchFieldsCopy:%#v\n", count, searchFieldsCopy)
+	if count > 0 {
+		// 搜索类型
+		searchFieldsType, err = l.service.GetSearchFieldsType(tableName, searchFieldsCopy)
+		//
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	fmt.Printf("after #%v\n", searchFields)
+	list, total, err := l.service.GetDataByPageSize(tableName, page, pageSize, searchFields, searchValues, searchFieldsType)
+	if err != nil {
+		return nil, err
+	}
+	data = make(map[string]interface{}, 5)
+	data["total"] = total
+	data["list"] = list
+	data["page_size"] = pageSize
+	data["page"] = page
+	data["table"] = tableName
+	return
 }

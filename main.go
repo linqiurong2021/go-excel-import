@@ -7,6 +7,7 @@ import (
 
 	"github.com/linqiurong2021/go-excel-import/conf"
 	"github.com/linqiurong2021/go-excel-import/db"
+	"github.com/linqiurong2021/go-excel-import/server"
 	v1 "github.com/linqiurong2021/go-excel-import/service/v1"
 )
 
@@ -18,11 +19,13 @@ func main() {
 	}
 	// 数据库
 	db := db.NewDB()
+
+	server.NewRestful(db).StartServer()
 	// 创建模板
 	// createTable(db)
 	// createLogic(db)
 
-	createService(db)
+	// createService(db)
 	//
 	// v1.NewService(db)
 	// service := v1.NewService(db)

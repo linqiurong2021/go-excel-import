@@ -11,21 +11,38 @@
       :label="labelNames[index]"
     >
     </el-table-column>
+    <el-table-column
+      fixed="right"
+      label="操作"
+      width="100">
+      <template slot-scope="scope">
+        <el-button @click="handleClick(scope.row)" type="text" size="small">查看</el-button>
+        <el-button type="text" size="small">编辑</el-button>
+      </template>
+    </el-table-column>
   </el-table>
-  
+    <el-pagination
+      small
+      layout="total, prev, pager, next"
+      :page-size.sync="pageSize"
+      :current-page.sync="currentPage"
+      :total="total">
+    </el-pagination>
  </div>
 </template>
 
 <script lang="ts">
-import {Table, TableColumn} from "element-ui"
+import {Table, TableColumn, Pagination, Button} from "element-ui"
 import {ListField} from '../../utils/const.js'
-import {getTableListByPage} from '../../api/excel-import.js'
+import {getListByPage} from '../../api/excel-import.js'
 import { mapGetters } from 'vuex'
  export default {
   name: "List",
   components: {
     ElTable: Table,
-    ElTableColumn : TableColumn
+    ElTableColumn : TableColumn,
+    ElPagination: Pagination,
+    ElButton: Button
   },
 
   props: {
@@ -48,8 +65,27 @@ import { mapGetters } from 'vuex'
     },
     getSearchParams: { 
       handler: function(newParams, oldParams) {
-        console.log(newParams, oldParams,'getSearchParams')
+        // console.log(newParams,'newParams')
+        // console.log(newParams,'newParams')
+        this.newParams = newParams
+        let defaultParams = {
+          page: this.currentPage,
+          page_size: this.pageSize,
+          table: this.tableName,
+          params: this.newParams,
+        }
+        this.getListByPage(defaultParams)
+        // console.log("end")
       }
+    },
+    currentPage(newVal, oldVal) {
+      let defaultParams = {
+        page: this.currentPage,
+        page_size: this.pageSize,
+        table: this.tableName,
+        params: this.newParams,
+      }
+      this.getListByPage(defaultParams)
     }
   },
   computed: {
@@ -81,9 +117,13 @@ import { mapGetters } from 'vuex'
     },
     ...mapGetters({
       getSearchParams: 'form/getSearchParams',
+      tableName: "form/getTableName"
     })
   },
   methods: {
+    handleClick(row) {
+      console.log(row)
+    },
     tableRowClassName({row, rowIndex}) {
       if (rowIndex === 1) {
         return 'warning-row';
@@ -93,15 +133,19 @@ import { mapGetters } from 'vuex'
       return '';
     },
     // 获取分页数据内容
-    getTableListByPage() {
-      let params = {
-        page: 1,
-        pageSize: 10,
-        params: "name=''&id=''"
-      }
+    getListByPage(params) {
       // 获取列表数据
-      getTableListByPage(params).then((res)=>{
-        console.log(res,'res')
+      getListByPage(params).then((res)=>{
+        let data = res.data
+        if (data.total) {
+          this.total = data.total
+        }
+        // console.log(data,'data')
+        if (data.list || data.list == null) {
+          let list = data.list == null ? [] : data.list
+          this.tableData = list
+        }
+        
       })
     }
   },
@@ -111,27 +155,23 @@ import { mapGetters } from 'vuex'
       ListField: ListField,
       // 名称
       labelNames: [],
-      tableData: [{
-        date: '2016-05-02',
-        name: '王小虎',
-        address: '上海市普陀区金沙江路 1518 弄',
-      }, {
-        date: '2016-05-04',
-        name: '王小虎',
-        address: '上海市普陀区金沙江路 1518 弄'
-      }, {
-        date: '2016-05-01',
-        name: '王小虎',
-        address: '上海市普陀区金沙江路 1518 弄',
-      }, {
-        date: '2016-05-03',
-        name: '王小虎',
-        address: '上海市普陀区金沙江路 1518 弄'
-      }]
+      tableData: [],
+      total: 0,
+      currentPage: 1,
+      pageSize: 5,
+      // 搜索参数
+      newParams: ''
     }
   },
-  mounted() {
-    this.getTableListByPage()
+  created() {
+    // 默认获取全部数据
+    let defaultParams = {
+      "page": this.currentPage,
+      "page_size": this.pageSize,
+      "table": this.tableName,
+      "params": ""
+    }
+    this.getListByPage(defaultParams)
   }
  }
 </script>

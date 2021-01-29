@@ -1,7 +1,7 @@
 <template>
   <div class="search-wrap">
     <div v-for="(item,key) in searchKeys" :key="key">
-      <el-input v-model="searchParams[item]" :placeholder="labelName(key,1)" v-if="searchTypeValues[key] == FieldType.TEXT"></el-input>
+      <el-input v-model="searchParams[item]" :placeholder="labelName(key,1)" v-if="searchTypeValues[key] == FieldType.TEXT" clearable></el-input>
       <el-select v-model="searchParams[item]" :placeholder="labelName(key,2)" v-else-if="searchTypeValues[key] == FieldType.SELECT " clearable>
         <el-option
           v-for="subItem in selectOptions[item]"
@@ -146,8 +146,12 @@ export default {
   methods: {
     search() {
       //
-      console.log(this.searchParams,'searchParams')
-      this.$store.dispatch('form/setSearchParams', this.searchParams)
+      let queryString = ""
+      for (let item in this.searchParams ){
+        queryString += `${item}=${this.searchParams[item]}&`
+      }
+      queryString = queryString.substr(0, queryString.length - 1)
+      this.$store.dispatch('form/setSearchParams', queryString)
     },
     labelName(key ,type ) {
       let label = type == 1 ? "请输入" : "请选择"
