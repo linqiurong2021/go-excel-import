@@ -179,13 +179,35 @@ func (s *Service) GetDataByPageSize(tableName string, page int, pageSize int, se
 }
 
 // GetDataByID 获取一条数据
-func (s *Service) GetDataByID(tableName string, sysID int64) (rows *sql.Rows, err error) {
+func (s *Service) GetDataByID(tableName string, sysID int64) (list map[string]interface{}, err error) {
 	// 获取字段
-	s.getFields(tableName)
-	fields := "*"
-	getSQL := fmt.Sprintf("SELECT %s FROM %s WHERE SYS_ID = %d", fields, tableName, sysID)
-	rows, err = s.db.ExecuteSQLRows(getSQL)
-	return
+	fields, err := s.getFields(tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	getSQL := fmt.Sprintf("SELECT %s FROM %s WHERE SYS_ID = %d", strings.Join(fields, ","), tableName, sysID)
+	fmt.Printf("GET DATA SQL:%#v\n", getSQL)
+	rows, err := s.db.ExecuteSQLRows(getSQL)
+	//
+	scanArgs := make([]interface{}, len(fields))
+	for i := range fields {
+		scanArgs[i] = &fields[i]
+	}
+
+	item := make(map[string]interface{}, len(fields))
+
+	if rows.Next() {
+		columns, _ := rows.Columns()
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, err
+		}
+
+		for i, data := range scanArgs {
+			item[columns[i]] = *data.(*string) //取实际类型
+		}
+	}
+	return item, nil
 }
 
 // AddData 新增一条数据
@@ -377,4 +399,106 @@ func (s *Service) GetSearchFieldsType(tableName string, searchFieldsCopy []strin
 	}
 	fmt.Printf("fieldsType: %#v\n", fieldsType)
 	return
+}
+
+// GetFieldsType 获取字段类型
+func (s *Service) GetFieldsType(tableName string) (fieldsType map[string]string, err error) {
+	fields, err := s.getFields(tableName)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("fields: %#v\n", strings.Join(fields, ","))
+	// 获取配置数据
+	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 1; ", strings.Join(fields, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
+	// 执行
+	rows, err := s.db.ExecuteSQLRows(getConfigSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// 获取类数据
+	columns, _ := rows.Columns()
+
+	// 以下代码来自官方 https://github.com/go-sql-driver/mysql/wiki/Examples
+	// Make a slice for the values
+	values := make([]sql.RawBytes, len(columns))
+	scanArgs := make([]interface{}, len(values))
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
+
+	var rowMap = make(map[string]string)
+	// Fetch rows
+	if rows.Next() {
+		err = rows.Scan(scanArgs...)
+		if err != nil {
+			panic(err.Error()) // proper error handling instead of panic in your app
+		}
+		var value string
+
+		for i, col := range values {
+			if col == nil {
+				value = "NULL"
+			} else {
+				value = string(col)
+			}
+			rowMap[columns[i]] = value
+			// fmt.Println(columns[i], ": ", value)
+		}
+
+	}
+	return rowMap, nil
+}
+
+// GetFieldsName 获取字段类型
+func (s *Service) GetFieldsName(tableName string) (fieldsType map[string]string, err error) {
+	fields, err := s.getFields(tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	// 获取配置数据
+	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 4; ", strings.Join(fields, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
+	// 执行
+	fmt.Printf("\n\n\ngetConfigSQL: %#v\n\n\n", getConfigSQL)
+	rows, err := s.db.ExecuteSQLRows(getConfigSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// 获取类数据
+	columns, _ := rows.Columns()
+
+	// 以下代码来自官方 https://github.com/go-sql-driver/mysql/wiki/Examples
+	// Make a slice for the values
+	values := make([]sql.RawBytes, len(columns))
+	scanArgs := make([]interface{}, len(values))
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
+
+	var rowMap = make(map[string]string)
+	// Fetch rows
+	if rows.Next() {
+		err = rows.Scan(scanArgs...)
+		if err != nil {
+			panic(err.Error()) // proper error handling instead of panic in your app
+		}
+		var value string
+
+		for i, col := range values {
+			if col == nil {
+				value = "NULL"
+			} else {
+				value = string(col)
+			}
+			rowMap[columns[i]] = value
+			// fmt.Println(columns[i], ": ", value)
+		}
+
+	}
+	return rowMap, nil
+
 }

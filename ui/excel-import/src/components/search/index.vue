@@ -19,6 +19,7 @@
 import { Input, Select, Button, Option} from "element-ui"
 import {IgnoreFields, FieldType,SearchField} from "../../utils/const.js"
 import {getSelectOptions} from '../../api/excel-import.js'
+import { mapGetters } from "vuex"
 export default {
   name: "Search",
   components: {
@@ -55,6 +56,7 @@ export default {
     },
     // 所有值
     configValues() {
+      console.log("configValues")
       return Object.values(this.config)
     },
     typeKeys() {
@@ -75,6 +77,7 @@ export default {
       let searchLabels = []
       //
       this.configValues.forEach((item,index)=>{
+       
         // 通过判断值不为空则说明需要有搜索
         if(item.trim() == this.SearchField.VALUE) {
           let key = this.configKeys[index]
@@ -90,6 +93,7 @@ export default {
       this.searchTypeValues = searchTypeValues
       this.searchParams = searchFields
       this.searchLabels = searchLabels
+      console.log(this.searchTypeValues,this.searchParams,this.searchLabels,'result')
       return searchKeys
     },
     // 下拉字段
@@ -101,8 +105,12 @@ export default {
           values.push(this.typeKeys[index])
         }
       })
+      console.log(values,'selectKeys')
       return values
-    }
+    },
+    ...mapGetters({
+      getTableName: "form/getTableName"
+    })
   },
   watch: {
     type(newType, oldType){
@@ -110,7 +118,7 @@ export default {
       if(this.selectKeys.length > 0) {
         //
         let data = {
-          table: "TemplateTest",
+          table: this.getTableName,
           keys: this.selectKeys.join(',')
         }
         let tmpSearchOptions = {}

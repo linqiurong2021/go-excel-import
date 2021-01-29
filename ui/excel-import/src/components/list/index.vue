@@ -17,7 +17,7 @@
       width="100">
       <template slot-scope="scope">
         <el-button @click="handleClick(scope.row)" type="text" size="small">查看</el-button>
-        <el-button type="text" size="small">编辑</el-button>
+        <el-button @click="handleDelete(scope.row)" type="text" size="small">删除</el-button>
       </template>
     </el-table-column>
   </el-table>
@@ -26,23 +26,29 @@
       layout="total, prev, pager, next"
       :page-size.sync="pageSize"
       :current-page.sync="currentPage"
-      :total="total">
+      :total.sync="total">
     </el-pagination>
+
+    <DetailDialog :types="fieldsType" :detail="detailData" :names="fieldsName" ref="dialog"/>
  </div>
 </template>
 
-<script lang="ts">
+<script>
 import {Table, TableColumn, Pagination, Button} from "element-ui"
 import {ListField} from '../../utils/const.js'
-import {getListByPage} from '../../api/excel-import.js'
+import {getListByPage, getDataByID, getFieldsType,getFieldsName} from '../../api/excel-import.js'
 import { mapGetters } from 'vuex'
+
+import DetailDialog from "../dialog/index"
+
  export default {
   name: "List",
   components: {
+    DetailDialog,
     ElTable: Table,
     ElTableColumn : TableColumn,
     ElPagination: Pagination,
-    ElButton: Button
+    ElButton: Button,
   },
 
   props: {
@@ -63,29 +69,22 @@ import { mapGetters } from 'vuex'
     config(newConf, oldConf){
       console.log(newConf,'newConf')
     },
+    // 模板切换
+    tableName() {
+      this.newParams = ""
+      
+      this.getListByPage()
+    },
     getSearchParams: { 
       handler: function(newParams, oldParams) {
-        // console.log(newParams,'newParams')
-        // console.log(newParams,'newParams')
         this.newParams = newParams
-        let defaultParams = {
-          page: this.currentPage,
-          page_size: this.pageSize,
-          table: this.tableName,
-          params: this.newParams,
-        }
-        this.getListByPage(defaultParams)
+        this.getListByPage()
         // console.log("end")
       }
     },
     currentPage(newVal, oldVal) {
-      let defaultParams = {
-        page: this.currentPage,
-        page_size: this.pageSize,
-        table: this.tableName,
-        params: this.newParams,
-      }
-      this.getListByPage(defaultParams)
+      this.currentPage = newVal
+      this.getListByPage()
     }
   },
   computed: {
@@ -123,6 +122,34 @@ import { mapGetters } from 'vuex'
   methods: {
     handleClick(row) {
       console.log(row)
+      let params = {
+        table: this.tableName,
+        sysID: row.SYS_ID
+      }
+      let tableParams= {table: this.tableName}
+      getFieldsType(tableParams).then((res)=>{
+        let {data} = res
+        this.fieldsType = data
+        this.$refs.dialog.dialogVisible = true
+        console.log(data,"fieldsType")
+      })
+      //
+      getDataByID(params).then((res)=>{
+        let {data} = res
+        this.detailData = data
+        this.$refs.dialog.dialogVisible = true
+         console.log(data,'res')
+      })
+      // 
+      getFieldsName(tableParams).then((res)=>{
+        let {data} = res
+        this.fieldsName = data
+        console.log(data,'names')
+        this.$refs.dialog.dialogVisible = true
+      })
+    },
+    handleDelete(row) {
+      console.log(row, 'delete')
     },
     tableRowClassName({row, rowIndex}) {
       if (rowIndex === 1) {
@@ -133,17 +160,22 @@ import { mapGetters } from 'vuex'
       return '';
     },
     // 获取分页数据内容
-    getListByPage(params) {
+    getListByPage() {
+      let params = {
+        page: this.currentPage,
+        page_size: this.pageSize,
+        table: this.tableName,
+        params: this.newParams,
+      }
       // 获取列表数据
       getListByPage(params).then((res)=>{
         let data = res.data
-        if (data.total) {
-          this.total = data.total
-        }
-        // console.log(data,'data')
+        console.log(data,'data')
         if (data.list || data.list == null) {
           let list = data.list == null ? [] : data.list
           this.tableData = list
+          this.total = data.list == null ? 0 : data.total
+          console.log(this.total, 'total')
         }
         
       })
@@ -160,18 +192,20 @@ import { mapGetters } from 'vuex'
       currentPage: 1,
       pageSize: 5,
       // 搜索参数
-      newParams: ''
+      newParams: '',
+      //
+      fieldsType: {},
+      //
+      fieldsName: {},
+      //
+      detailData: {},
+
     }
   },
   created() {
+    this.newParams = "" 
     // 默认获取全部数据
-    let defaultParams = {
-      "page": this.currentPage,
-      "page_size": this.pageSize,
-      "table": this.tableName,
-      "params": ""
-    }
-    this.getListByPage(defaultParams)
+    this.getListByPage()
   }
  }
 </script>

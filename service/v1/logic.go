@@ -239,3 +239,42 @@ func (l *Logic) GetTableListByPage(params map[string]string, searchFields []stri
 	data["table"] = tableName
 	return
 }
+
+// GetDataByID 获取详情
+func (l *Logic) GetDataByID(tableName string, sysID int64) (data map[string]interface{}, err error) {
+	if tableName == "" {
+		return nil, errors.New("table name must")
+	}
+	if sysID == 0 {
+		return nil, errors.New("sysID must")
+	}
+	data, err = l.service.GetDataByID(tableName, sysID)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// GetFieldsType 获取详情
+func (l *Logic) GetFieldsType(tableName string) (data map[string]string, err error) {
+	if tableName == "" {
+		return nil, errors.New("table name must")
+	}
+	data, err = l.service.GetFieldsType(tableName)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// GetFieldsName 获取详情
+func (l *Logic) GetFieldsName(tableName string) (data map[string]string, err error) {
+	if tableName == "" {
+		return nil, errors.New("table name must")
+	}
+	data, err = l.service.GetFieldsName(tableName)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}

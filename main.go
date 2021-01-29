@@ -64,7 +64,7 @@ func createService(db *db.DB) {
 
 func createLogic(db *db.DB) {
 	logic := v1.NewLogic(db)
-	if err := logic.CreateTable("./template/template_test.xlsx", false); err != nil {
+	if err := logic.CreateTable("./template/template_test_2.xlsx", false); err != nil {
 		fmt.Printf("CreateTable error %s\n", err)
 	}
 

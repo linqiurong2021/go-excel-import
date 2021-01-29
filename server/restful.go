@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/linqiurong2021/go-excel-import/db"
@@ -166,13 +167,81 @@ func (rest *Restful) GetListByPage(w http.ResponseWriter, r *http.Request) {
 	// rest.logic.GetTableListByPage(params)
 }
 
+// GetDataByID GetDataByID
+func (rest *Restful) GetDataByID(w http.ResponseWriter, r *http.Request) {
+	tableName := r.URL.Query().Get("table")
+	if tableName == "" {
+		fmt.Fprintln(w, "table params must")
+	}
+	strID := r.URL.Query().Get("sysID")
+	sysID, err := strconv.ParseInt(strID, 10, 64)
+	fmt.Printf("#SYS_ID:%#v\n", sysID)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	//
+	data, err := rest.logic.GetDataByID(tableName, sysID)
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	fmt.Fprintln(w, string(jsonData))
+	return
+}
+
+// GetFieldsType 获取字段类型
+func (rest *Restful) GetFieldsType(w http.ResponseWriter, r *http.Request) {
+	tableName := r.URL.Query().Get("table")
+	if tableName == "" {
+		fmt.Fprintln(w, "table params must")
+	}
+	data, err := rest.logic.GetFieldsType(tableName)
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	fmt.Fprintln(w, string(jsonData))
+	return
+}
+
+// GetFieldsName 获取字段类型
+func (rest *Restful) GetFieldsName(w http.ResponseWriter, r *http.Request) {
+	tableName := r.URL.Query().Get("table")
+	if tableName == "" {
+		fmt.Fprintln(w, "table params must")
+	}
+	data, err := rest.logic.GetFieldsName(tableName)
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+	jsonData, err := json.Marshal(data)
+	fmt.Printf("#JSONDATA#%#v\n", jsonData)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	fmt.Fprintln(w, string(jsonData))
+	return
+}
+
 // StartServer 启用Server
 func (rest *Restful) StartServer() {
 
 	http.HandleFunc("/getSelectOptions", rest.GetSelectOptions)
 	//
 	http.HandleFunc("/getConfig", rest.GetConfig)
-
+	http.HandleFunc("/getDataByID", rest.GetDataByID)
+	http.HandleFunc("/getFieldsType", rest.GetFieldsType)
+	http.HandleFunc("/getFieldsName", rest.GetFieldsName)
 	//
 	http.HandleFunc("/getListByPage", rest.GetListByPage)
 

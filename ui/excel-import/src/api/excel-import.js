@@ -25,9 +25,39 @@ const getListByPage = ( data ) => {
   })
 }
 
+// 获取详情
+const getDataByID = ( params ) => {
+  return axios.request({
+    url:"/getDataByID",
+    method: 'get',
+    params
+  })
+}
+
+// 获取详情
+const getFieldsType = ( params ) => {
+  return axios.request({
+    url:"/getFieldsType",
+    method: 'get',
+    params
+  })
+}
+
+// 获取详情
+const getFieldsName = ( params ) => {
+  return axios.request({
+    url:"/getFieldsName",
+    method: 'get',
+    params
+  })
+}
+
 
 export {
   getConfig,
   getSelectOptions,
-  getListByPage
+  getListByPage,
+  getDataByID,
+  getFieldsType,
+  getFieldsName
 }
