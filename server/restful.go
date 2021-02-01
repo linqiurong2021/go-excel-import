@@ -194,6 +194,16 @@ func (rest *Restful) GetDataByID(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// UpdateData UpdateData
+func (rest *Restful) UpdateData(w http.ResponseWriter, r *http.Request) {
+	tableName := r.URL.Query().Get("table")
+	if tableName == "" {
+		fmt.Fprintln(w, "table params must")
+	}
+	//
+	return
+}
+
 // GetFieldsType 获取字段类型
 func (rest *Restful) GetFieldsType(w http.ResponseWriter, r *http.Request) {
 	tableName := r.URL.Query().Get("table")

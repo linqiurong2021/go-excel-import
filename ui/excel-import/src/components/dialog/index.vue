@@ -7,15 +7,18 @@
         <template v-if="key != 'SYS_ID'">
           <el-form-item :label="names[key]" >
             <el-input v-model="formData[key]" :name="key" autocomplete="off" :placeholder="getPlaceholder(key,1)" v-if="types[key] == FieldType.TEXT" ></el-input>
-            <el-select v-model="formData[key]" :placeholder="getPlaceholder(key,2)" v-else-if="types[key] == FieldType.SELECT">
-              <el-option
-                v-for="subItem in selectOptions[key]"
-                :key="subItem"
-                :label="subItem"
-                :value="subItem">
-              </el-option>
-            </el-select>
             
+            <div  v-else-if="types[key] == FieldType.SELECT">
+              <el-select v-model="formData[key]" :placeholder="getPlaceholder(key,2)">
+                <el-option
+                  v-for="subItem in selectOptions[key]"
+                  :key="subItem"
+                  :label="subItem"
+                  :value="subItem">
+                </el-option>
+              </el-select>
+              <el-button type="primary" size="small" icon="el-icon-plus" circle  @click="showItem(key)"></el-button>
+            </div>
           </el-form-item>
         </template>
       </div>
@@ -23,9 +26,10 @@
     </el-form>
     <div slot="footer" class="dialog-footer">
       <el-button @click="dialogVisible = false">取 消</el-button>
-      <el-button type="primary" @click="dialogVisible = false">确 定</el-button>
+      <el-button type="primary" @click="submit">确 定</el-button>
     </div>
   </el-dialog>
+  <newItem :name="newItemName" :item-key="newItemKey" @getItem="getItem" ref="newItem"/>
  </div>
 </template>
 
@@ -34,6 +38,7 @@ import {Dialog, Button, Form, FormItem, Input, Select, Option} from "element-ui"
 import {FieldType,SearchField} from "../../utils/const.js"
 import {getSelectOptions} from "../../api/excel-import.js"
 import { mapGetters } from "vuex"
+import newItem from "./newItem"
 export default {
   name: "Dialog",
   props: {
@@ -64,6 +69,7 @@ export default {
     ElInput:Input,
     ElSelect: Select,
     ElOption: Option,
+    newItem
   },
   data() {
     return {
@@ -71,7 +77,9 @@ export default {
       formData: {},
       FieldType:FieldType,
       SearchField:SearchField,
-      selectOptions: []
+      selectOptions: [],
+      newItemName: "",
+      newItemKey: ""
     }
   },
   computed: {
@@ -132,6 +140,25 @@ export default {
     getPlaceholder(key,type) {
       let label = type == 1 ? "请输入": "请选择"
       return label+this.names[key]
+    },
+    submit() {
+      console.log(this.formData,'formData')
+    },
+    showItem(key) {
+      this.newItemName = this.getItem(key,1)
+      this.newItemKey = key
+      this.$refs.newItem.show = true
+      this.$refs.newItem.inputData = ""
+    },
+    getItem(data) {
+      // 如果不存在则直接返回
+      if (!this.selectOptions[data.key]) {
+        return
+      }
+      let index = this.selectOptions[data.key].length
+      this.$set(this.selectOptions[data.key], index , data.value)
+      // 默认为新增的值
+      this.formData[data.key] = data.value
     }
   }
 }
