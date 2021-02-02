@@ -93,7 +93,7 @@ export default {
       this.searchTypeValues = searchTypeValues
       this.searchParams = searchFields
       this.searchLabels = searchLabels
-      console.log(this.searchTypeValues,this.searchParams,this.searchLabels,'result')
+      // console.log(this.searchTypeValues,this.searchParams,this.searchLabels,'result')
       return searchKeys
     },
     // 下拉字段
@@ -143,7 +143,7 @@ export default {
       SearchField: SearchField,
       // 搜索名称
       searchTypeValues: [],
-  
+      // 
       searchParams: {},
       // key
       selectOptions: {},
@@ -153,13 +153,15 @@ export default {
   },
   methods: {
     search() {
-      //
-      let queryString = ""
+       // 过滤空的数据
+      let newParams = {}
       for (let item in this.searchParams ){
-        queryString += `${item}=${this.searchParams[item]}&`
+        if(this.searchParams[item]!=""){
+           newParams[item]= this.searchParams[item]
+        }
       }
-      queryString = queryString.substr(0, queryString.length - 1)
-      this.$store.dispatch('form/setSearchParams', queryString)
+      this.$store.dispatch('form/setSearchParams', newParams)
+     
     },
     labelName(key ,type ) {
       let label = type == 1 ? "请输入" : "请选择"

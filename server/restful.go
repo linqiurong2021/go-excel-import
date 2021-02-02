@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/linqiurong2021/go-excel-import/db"
 	v1 "github.com/linqiurong2021/go-excel-import/service/v1"
@@ -101,22 +100,25 @@ type TableListRequest struct {
 	PageSize int    `json:"page_size"`
 }
 
+// TableListRequest1 列表请求数据
+type TableListRequest1 struct {
+	Table    string            `json:"table"`
+	Params   map[string]string `json:"params"`
+	Page     int               `json:"page"`
+	PageSize int               `json:"page_size"`
+}
+
 // 获取搜索的字段与数据
-func (rest *Restful) getSearchKeyAndValues(params string) (searchFields []string, searchValues []string) {
+func (rest *Restful) getSearchKeyAndValues(params map[string]string) (searchFields []string, searchValues []string) {
 	//
 	fmt.Printf("len params %d\n", len(params))
 	if len(params) <= 0 {
 		return
 	}
 	// 地址分割
-	searchParams := strings.Split(params, "&")
-	for _, item := range searchParams {
-		tmp := strings.Split(item, "=")
-		// 如果为空则不需要搜索
-		if tmp[1] != "" {
-			searchFields = append(searchFields, tmp[0])
-			searchValues = append(searchValues, tmp[1])
-		}
+	for k, v := range params {
+		searchFields = append(searchFields, k)
+		searchValues = append(searchValues, v)
 	}
 	return
 }
@@ -130,7 +132,7 @@ func (rest *Restful) GetListByPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// 列表请求数据
-	var tableList TableListRequest
+	var tableList TableListRequest1
 	if err := json.Unmarshal(body, &tableList); err != nil {
 		fmt.Fprintln(w, "json invalidate")
 		return
@@ -139,17 +141,15 @@ func (rest *Restful) GetListByPage(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "table params must")
 		return
 	}
-	var params = make(map[string]string, 4)
+	var params = make(map[string]string, 3)
 	//
 	params["table"] = tableList.Table
 	params["page"] = fmt.Sprintf("%d", tableList.Page)
 	params["page_size"] = fmt.Sprintf("%d", tableList.PageSize)
-	params["params"] = tableList.Params
+
 	// 搜索字段与对应值
 	searchFields, searchValues := rest.getSearchKeyAndValues(tableList.Params)
 	//
-	fmt.Printf("searchFields: %#v\n", searchFields)
-	fmt.Printf("searchValues: %#v\n", searchValues)
 	data, err := rest.logic.GetTableListByPage(params, searchFields, searchValues)
 
 	if err != nil {
@@ -387,6 +387,8 @@ func (rest *Restful) StartServer() {
 	http.HandleFunc("/getFields", rest.GetFields)
 	// 列表分页
 	http.HandleFunc("/getListByPage", rest.GetListByPage)
+	// 列表分页
+	http.HandleFunc("/getListByPage1", rest.GetListByPage)
 	// 数据更新
 	http.HandleFunc("/updateBySysID", rest.UpdateBySysID)
 	// 删除

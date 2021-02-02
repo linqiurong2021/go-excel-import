@@ -128,7 +128,7 @@ func (s *Service) GetDataByPageSize(tableName string, page int, pageSize int, se
 	fmt.Printf("searchValues: %#v\n searchFieldsType: %#v\n", searchValues, searchFieldsType)
 	// 获取参数中的条件
 	where := s.getParamsFieldsAndValues(searchFields, searchValues, searchFieldsType)
-	if len(where) == 0 {
+	if len(where) <= 0 {
 		totalSQL = fmt.Sprintf("SELECT COUNT(SYS_ID) FROM `%s`;", tableName)
 		// 获取所有的数据
 		getAllSQL = fmt.Sprintf("SELECT %s FROM `%s` ORDER BY SYS_ID LIMIT %d, %d ;", strings.Join(fields, ","), tableName, offset, pageSize)

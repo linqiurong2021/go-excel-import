@@ -3,7 +3,7 @@ const state = {
   // 表单名称
   tableName: {},
   // 搜索参数
-  searchParams: '',
+  searchParams: {},
   // 表单字段 字段类型 key 名称等配置
   tableConfigs: []
 }

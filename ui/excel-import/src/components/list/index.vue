@@ -102,7 +102,7 @@ import DetailDialog from "../dialog/index"
     },
     // 模板切换
     tableName() {
-      this.newParams = ""
+      this.newParams = {}
       
       this.getListByPage()
     },
@@ -305,7 +305,7 @@ import DetailDialog from "../dialog/index"
     }
   },
   created() {
-    this.newParams = "" 
+    this.newParams = {}
     // 默认获取全部数据
     this.getListByPage()
   }
