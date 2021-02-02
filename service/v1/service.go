@@ -210,26 +210,97 @@ func (s *Service) GetDataByID(tableName string, sysID int64) (list map[string]in
 	return item, nil
 }
 
-// AddData 新增一条数据
-func (s *Service) AddData(tableName string, params map[string]string) (result sql.Result, err error) {
+// CreateData 新增一条数据
+func (s *Service) CreateData(tableName string, params map[string]interface{}) (result sql.Result, err error) {
 	// 获取字段
-	s.getFields(tableName)
-	fields := "*"
+	fields, err := s.getFields(tableName)
+	// 判断更新的字段 是否在数据表中
+	var addFields []string
+	for k := range params {
+		addFields = append(addFields, k)
+	}
+	diff := utils.Difference(addFields, fields)
+	if len(diff) > 0 {
+		errMsg := fmt.Sprintf("%s fields not exists", strings.Join(diff, ","))
+		return nil, errors.New(errMsg)
+	}
+	// 删除SYS_ID
+	noSysIDFields := fields[0 : len(fields)-1]
+	//
+	inserData := s.getCreateKVSQL(params, noSysIDFields)
+	if inserData == "" {
+		return nil, errors.New("Create failure")
+	}
+
 	// 数据处理
-	inserData := ""
-	getSQL := fmt.Sprintf("INSERT INTO %s(%s) VALUES %s", fields, tableName, inserData)
-	result, err = s.db.ExecuteSQLResult(getSQL)
+	insertSQL := fmt.Sprintf("INSERT INTO %s(%s) VALUES (%s)", tableName, strings.Join(noSysIDFields, ","), inserData)
+	fmt.Printf("#insertSQL# %v\n", insertSQL)
+	result, err = s.db.ExecuteSQLResult(insertSQL)
 	return
 }
 
-// UpdateDataByID 更新一条数据
-func (s *Service) UpdateDataByID(tableName string, params map[string]string) (result sql.Result, err error) {
-	// 获取字段
-	s.getFields(tableName)
+// getCreateKVSQL 获取新增SQL
+func (s *Service) getCreateKVSQL(params map[string]interface{}, noSysIDFields []string) string {
+	var tmpSQL string
+	for _, v := range noSysIDFields {
+		tmpSQL += fmt.Sprintf("'%s'%s", params[v], ",")
+	}
+	return strings.Trim(tmpSQL, ",")
+}
+
+// getUpdateSQL 获取更新语句
+func (s *Service) getUpdateKVSQL(params map[string]interface{}) string {
+	var tmpSQL string
+	for k, v := range params {
+		// 不修改SYS_ID
+		if k != "SYS_ID" {
+			tmpSQL += fmt.Sprintf("%s = '%s'%s", k, v, ",")
+		}
+	}
+	return strings.Trim(tmpSQL, ",")
+}
+
+// UpdateByID 更新一条数据
+func (s *Service) UpdateByID(tableName string, params map[string]interface{}) (result sql.Result, err error) {
+	fields, err := s.getFields(tableName)
+	// 判断更新的字段 是否在数据表中
+	var updateFields []string
+	for k := range params {
+		updateFields = append(updateFields, k)
+	}
+	if params["SYS_ID"] == "" {
+		return nil, errors.New("SYS_ID must")
+	}
+	diff := utils.Difference(updateFields, fields)
+	if len(diff) > 0 {
+		errMsg := fmt.Sprintf("%s fields not exists", strings.Join(diff, ","))
+		return nil, errors.New(errMsg)
+	}
+	updateData := s.getUpdateKVSQL(params)
+	if updateData == "" {
+		return nil, errors.New("Update failure")
+	}
+	fmt.Printf("#updateData#: %#v", updateData)
 	// 数据处理
-	updateData := ""
-	updateSQL := fmt.Sprintf("UPDATE TABLE %s SET %s", tableName, updateData)
+	updateSQL := fmt.Sprintf("UPDATE `%s` SET %s WHERE SYS_ID = %s ;", tableName, updateData, params["SYS_ID"])
+	fmt.Printf("#updateSQL#: %#v", updateSQL)
 	result, err = s.db.ExecuteSQLResult(updateSQL)
+	return
+}
+
+// DeleteBySysIDs 更新一条数据
+func (s *Service) DeleteBySysIDs(tableName string, sysIDs string) (result sql.Result, err error) {
+	//
+	if tableName == "" {
+		return nil, errors.New("table invlidate")
+	}
+	if len(sysIDs) <= 0 {
+		return nil, errors.New("sys_ids invlidate")
+	}
+	// 数据处理
+	deleteSQL := fmt.Sprintf("DELETE FROM `%s` WHERE SYS_ID in (%s) ;", tableName, sysIDs)
+	fmt.Printf("#deleteSQL#: %#v", deleteSQL)
+	result, err = s.db.ExecuteSQLResult(deleteSQL)
 	return
 }
 
@@ -448,6 +519,20 @@ func (s *Service) GetFieldsType(tableName string) (fieldsType map[string]string,
 		}
 
 	}
+	return rowMap, nil
+}
+
+// GetFields 获取字段类型
+func (s *Service) GetFields(tableName string) (fieldsType map[string]string, err error) {
+	fields, err := s.getFields(tableName)
+	if err != nil {
+		return nil, err
+	}
+	var rowMap = make(map[string]string)
+	for _, item := range fields {
+		rowMap[item] = ""
+	}
+	//
 	return rowMap, nil
 }
 

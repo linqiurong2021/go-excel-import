@@ -174,6 +174,7 @@ func (rest *Restful) GetDataByID(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "table params must")
 	}
 	strID := r.URL.Query().Get("sysID")
+	// 转64位
 	sysID, err := strconv.ParseInt(strID, 10, 64)
 	fmt.Printf("#SYS_ID:%#v\n", sysID)
 	if err != nil {
@@ -194,13 +195,85 @@ func (rest *Restful) GetDataByID(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// UpdateData UpdateData
-func (rest *Restful) UpdateData(w http.ResponseWriter, r *http.Request) {
-	tableName := r.URL.Query().Get("table")
-	if tableName == "" {
-		fmt.Fprintln(w, "table params must")
+// UpdateRequest 更新请求数据
+type UpdateRequest struct {
+	Table  string `json:"table"`
+	Params string `json:"params"`
+}
+
+// UpdateBySysID UpdateBySysID
+func (rest *Restful) UpdateBySysID(w http.ResponseWriter, r *http.Request) {
+	// 获取body
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("read body err, %v\n", err)
+		return
 	}
-	//
+	// 列表请求数据
+	var updateRequest UpdateRequest
+	if err := json.Unmarshal(body, &updateRequest); err != nil {
+		fmt.Fprintln(w, "json invalidate")
+		return
+	}
+	if updateRequest.Table == "" {
+		fmt.Fprintln(w, "table params must")
+		return
+	}
+	var paramsMap map[string]interface{}
+	err = json.Unmarshal([]byte(updateRequest.Params), &paramsMap)
+	if err != nil {
+		fmt.Println("params formate invalidate err: ", err)
+	}
+	result, err := rest.logic.UpdateBySysID(updateRequest.Table, paramsMap)
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+	fmt.Fprintln(w, affected)
+	return
+}
+
+// DeleteRequest 删除请求数据
+type DeleteRequest struct {
+	Table  string `json:"table"`
+	SysIDs string `json:"sys_ids"`
+}
+
+// DeleteBySysIDs DeleteBySysIDs
+func (rest *Restful) DeleteBySysIDs(w http.ResponseWriter, r *http.Request) {
+	// 批量或
+	// 获取body
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("read body err, %v\n", err)
+		return
+	}
+	// 列表请求数据
+	var deleteRequest DeleteRequest
+	if err := json.Unmarshal(body, &deleteRequest); err != nil {
+		fmt.Fprintln(w, "json invalidate")
+		return
+	}
+	if deleteRequest.Table == "" {
+		fmt.Fprintln(w, "table params must")
+		return
+	}
+	if len(deleteRequest.SysIDs) <= 0 {
+		fmt.Fprintln(w, "sys_id params must")
+		return
+	}
+	result, err := rest.logic.DeleteBySysIDs(deleteRequest.Table, deleteRequest.SysIDs)
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+	fmt.Fprintln(w, affected)
 	return
 }
 
@@ -243,18 +316,83 @@ func (rest *Restful) GetFieldsName(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// GetFields 获取字段
+func (rest *Restful) GetFields(w http.ResponseWriter, r *http.Request) {
+	tableName := r.URL.Query().Get("table")
+	if tableName == "" {
+		fmt.Fprintln(w, "table params must")
+	}
+	data, err := rest.logic.GetFields(tableName)
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+	jsonData, err := json.Marshal(data)
+	fmt.Printf("#JSONDATA#%#v\n", jsonData)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	fmt.Fprintln(w, string(jsonData))
+	return
+}
+
+// CreateData CreateData
+func (rest *Restful) CreateData(w http.ResponseWriter, r *http.Request) {
+	// 获取body
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("read body err, %v\n", err)
+		return
+	}
+	// 列表请求数据
+	var updateRequest UpdateRequest
+	if err := json.Unmarshal(body, &updateRequest); err != nil {
+		fmt.Fprintln(w, "json invalidate")
+		return
+	}
+	if updateRequest.Table == "" {
+		fmt.Fprintln(w, "table params must")
+		return
+	}
+	var paramsMap map[string]interface{}
+	err = json.Unmarshal([]byte(updateRequest.Params), &paramsMap)
+	if err != nil {
+		fmt.Println("params formate invalidate err: ", err)
+	}
+	result, err := rest.logic.CreateData(updateRequest.Table, paramsMap)
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+	fmt.Fprintln(w, affected)
+	return
+}
+
 // StartServer 启用Server
 func (rest *Restful) StartServer() {
-
+	// 获取下拉或单选或多选项
 	http.HandleFunc("/getSelectOptions", rest.GetSelectOptions)
-	//
+	// 获取配置信息(字段填写类型 字段名称等)
 	http.HandleFunc("/getConfig", rest.GetConfig)
+	// 通过ID 获取数据
 	http.HandleFunc("/getDataByID", rest.GetDataByID)
+	// 获取字段填写类型
 	http.HandleFunc("/getFieldsType", rest.GetFieldsType)
+	// 获取字段名称
 	http.HandleFunc("/getFieldsName", rest.GetFieldsName)
-	//
+	// 获取字段
+	http.HandleFunc("/getFields", rest.GetFields)
+	// 列表分页
 	http.HandleFunc("/getListByPage", rest.GetListByPage)
-
+	// 数据更新
+	http.HandleFunc("/updateBySysID", rest.UpdateBySysID)
+	// 删除
+	http.HandleFunc("/deleteBySysIDs", rest.DeleteBySysIDs)
+	// 新增
+	http.HandleFunc("/createData", rest.CreateData)
 	fmt.Println("\n StartServer \n ")
 	//
 	err := http.ListenAndServe(":8000", nil)

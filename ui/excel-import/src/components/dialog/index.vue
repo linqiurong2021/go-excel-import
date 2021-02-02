@@ -1,9 +1,9 @@
 <template>
  <div class="dialog">
-  <el-dialog title="详情" :visible.sync="dialogVisible">
+  <el-dialog :title="title" :visible.sync="dialogVisible">
     <el-form :model="formData">
       <!--获取名称-->
-      <div v-for="(item, key) in formData" :key="key">
+      <div v-for="(item, key) in fields" :key="key">
         <template v-if="key != 'SYS_ID'">
           <el-form-item :label="names[key]" >
             <el-input v-model="formData[key]" :name="key" autocomplete="off" :placeholder="getPlaceholder(key,1)" v-if="types[key] == FieldType.TEXT" ></el-input>
@@ -34,9 +34,9 @@
 </template>
 
 <script>
-import {Dialog, Button, Form, FormItem, Input, Select, Option} from "element-ui"
+import {Dialog, Button, Form, FormItem, Input, Select, Option, Message} from "element-ui"
 import {FieldType,SearchField} from "../../utils/const.js"
-import {getSelectOptions} from "../../api/excel-import.js"
+import {getSelectOptions, updateBySysID, createData} from "../../api/excel-import.js"
 import { mapGetters } from "vuex"
 import newItem from "./newItem"
 export default {
@@ -53,6 +53,16 @@ export default {
       default() {
         return {}
       }
+    },
+    fields: {
+      type: Object,
+      default() {
+        return {}
+      }
+    },
+    title: {
+      type: String,
+      default: ''
     },
     detail: {
       type: Object,
@@ -113,7 +123,7 @@ export default {
         // data
         getSelectOptions(data).then((res)=>{
           let {data}= res
-          console.log(data,'data#res')
+          // console.log(data,'data#res')
           this.selectKeys.forEach((item)=>{
             tmpSearchOptions[item] =data[item]
           })
@@ -122,6 +132,7 @@ export default {
         })
       }
     },
+   
     names(newVal, oldVal){
       console.log(newVal, 'names')
     },
@@ -142,6 +153,47 @@ export default {
       return label+this.names[key]
     },
     submit() {
+      // 更新数据
+      let data = {
+        table: this.getTableName,
+        params: JSON.stringify(this.formData)
+      }
+      if(this.title == "新增"){
+        createData(data).then((res)=>{
+          let {data} = res
+          if (data >=0) {
+            console.log("新增成功")
+            Message({
+              type: 'success',
+              message: "新增成功"
+            })
+            this.dialogVisible = false
+            this.formData = {} // 清除数据
+            this.$emit('updated')
+          }else{
+            console.error(data)
+          }
+          console.log(data.data)
+        })
+      }else {
+        updateBySysID(data).then((res)=>{
+          let {data} = res
+          if (data >=0) {
+            console.log("修改成功")
+            Message({
+              type: 'success',
+              message: "修改成功"
+            })
+            this.formData = {} // 清除数据
+            this.dialogVisible = false
+            this.$emit('updated')
+          }else{
+            console.error(data)
+          }
+          console.log(data.data)
+        })
+      }
+     
       console.log(this.formData,'formData')
     },
     showItem(key) {
@@ -159,7 +211,7 @@ export default {
       this.$set(this.selectOptions[data.key], index , data.value)
       // 默认为新增的值
       this.formData[data.key] = data.value
-    }
+    },
   }
 }
 </script>

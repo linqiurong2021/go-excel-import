@@ -52,6 +52,40 @@ const getFieldsName = ( params ) => {
   })
 }
 
+// 获取字段
+const getFields = ( params ) => {
+  return axios.request({
+    url:"/getFields",
+    method: 'get',
+    params
+  })
+}
+
+// 更新数据
+const updateBySysID = ( data ) => {
+  return axios.request({
+    url:"/updateBySysID",
+    method: 'post',
+    data
+  })
+}
+// 删除数据
+const deleteBySysIDs = ( data ) => {
+  return axios.request({
+    url:"/deleteBySysIDs",
+    method: 'post',
+    data
+  })
+}
+
+// 更新数据
+const createData = ( data ) => {
+  return axios.request({
+    url:"/createData",
+    method: 'post',
+    data
+  })
+}
 
 export {
   getConfig,
@@ -59,5 +93,9 @@ export {
   getListByPage,
   getDataByID,
   getFieldsType,
-  getFieldsName
+  getFieldsName,
+  updateBySysID,
+  deleteBySysIDs,
+  getFields,
+  createData
 }

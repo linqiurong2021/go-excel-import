@@ -1,9 +1,19 @@
 <template>
  <div>
+  <!--v-loading 需要引用并使用 位置main.js-->
    <el-table
+    v-loading="loading"
+    element-loading-text="拼命加载中"
+    element-loading-spinner="el-icon-loading"
+    element-loading-background="rgba(0, 0, 0, 0.8)"
     :data="tableData"
     style="width: 100%"
+    @selection-change="rowSelectionChange"
     :row-class-name="tableRowClassName">
+    <el-table-column
+      type="selection"
+      width="55">
+    </el-table-column>
     <el-table-column
       v-for="(item,index) in listKeys"
       :key="index"
@@ -17,7 +27,7 @@
       width="100">
       <template slot-scope="scope">
         <el-button @click="handleClick(scope.row)" type="text" size="small">查看</el-button>
-        <el-button @click="handleDelete(scope.row)" type="text" size="small">删除</el-button>
+        <el-button @click="handleDelete(scope.row)" type="text" size="small" >删除</el-button>
       </template>
     </el-table-column>
   </el-table>
@@ -28,15 +38,15 @@
       :current-page.sync="currentPage"
       :total.sync="total">
     </el-pagination>
-
-    <DetailDialog :types="fieldsType" :detail="detailData" :names="fieldsName" ref="dialog"/>
+    <!--详情弹窗-->
+    <DetailDialog :title="dialogTitle" :types="fieldsType" :detail="detailData" :fields="fields" :names="fieldsName" ref="dialog" @updated="updated"/>
  </div>
 </template>
 
 <script>
-import {Table, TableColumn, Pagination, Button} from "element-ui"
+import {Table, TableColumn, Pagination, Button, Popconfirm,MessageBox, Message} from "element-ui"
 import {ListField} from '../../utils/const.js'
-import {getListByPage, getDataByID, getFieldsType,getFieldsName} from '../../api/excel-import.js'
+import {getListByPage, getDataByID, getFieldsType,getFieldsName, deleteBySysIDs, getFields} from '../../api/excel-import.js'
 import { mapGetters } from 'vuex'
 
 import DetailDialog from "../dialog/index"
@@ -49,6 +59,7 @@ import DetailDialog from "../dialog/index"
     ElTableColumn : TableColumn,
     ElPagination: Pagination,
     ElButton: Button,
+    ElPopconfirm: Popconfirm
   },
 
   props: {
@@ -63,9 +74,29 @@ import DetailDialog from "../dialog/index"
       default() {
         return {}
       }
-    }
+    },
+    // 是否新增
+    isAdd: {
+      type: Boolean,
+      default: false
+    },
   },
   watch: {
+     // 新增操作
+    isAdd(newVal, oldVal) {
+      this.addOp = newVal
+    },
+    addOp(newVal, oldVal){
+      if(newVal) {
+        let tableParams= {table: this.tableName}
+        // console.log("newData")
+        this.dialogTitle = '新增'
+        this.getFieldsType(tableParams)
+        this.getFieldsName(tableParams)
+        this.getFields(tableParams)
+        this.$emit('addChange',false)
+      }
+    },
     config(newConf, oldConf){
       console.log(newConf,'newConf')
     },
@@ -85,10 +116,11 @@ import DetailDialog from "../dialog/index"
     currentPage(newVal, oldVal) {
       this.currentPage = newVal
       this.getListByPage()
-    }
+    },
+
   },
   computed: {
-        // 所有KEY
+    // 所有KEY
     configKeys () {
       return Object.keys(this.config)
     },
@@ -120,36 +152,92 @@ import DetailDialog from "../dialog/index"
     })
   },
   methods: {
-    handleClick(row) {
-      console.log(row)
-      let params = {
-        table: this.tableName,
-        sysID: row.SYS_ID
-      }
-      let tableParams= {table: this.tableName}
-      getFieldsType(tableParams).then((res)=>{
+    
+    // 更新成功后需要刷新
+    updated() {
+      this.getListByPage()
+    },
+    getFieldsType(tableParams) {
+     getFieldsType(tableParams).then((res)=>{
         let {data} = res
         this.fieldsType = data
         this.$refs.dialog.dialogVisible = true
         console.log(data,"fieldsType")
       })
-      //
+    },
+    getFieldsName(tableParams) {
+      getFieldsName(tableParams).then((res)=>{
+        let {data} = res
+        this.fieldsName = data
+        this.$refs.dialog.dialogVisible = true
+      })
+    },
+    getFields(tableParams) {
+      getFields(tableParams).then((res)=>{
+        let {data} = res
+        this.fields = data
+        this.$refs.dialog.dialogVisible = true
+      })
+    },
+    //
+    getDataByID(sysID) {
+       let params = {
+        table: this.tableName,
+        sysID: sysID
+      }
       getDataByID(params).then((res)=>{
         let {data} = res
         this.detailData = data
         this.$refs.dialog.dialogVisible = true
-         console.log(data,'res')
-      })
-      // 
-      getFieldsName(tableParams).then((res)=>{
-        let {data} = res
-        this.fieldsName = data
-        console.log(data,'names')
-        this.$refs.dialog.dialogVisible = true
+          console.log(data,'res')
       })
     },
+    handleClick(row) {
+     
+      let tableParams= {table: this.tableName}
+      //
+      this.getFieldsType(tableParams)
+      //
+      this.getDataByID(row.SYS_ID)
+      // 
+      this.getFieldsName(tableParams)
+      //
+      this.getFields(tableParams)
+    },
     handleDelete(row) {
-      console.log(row, 'delete')
+      // 提示是否需要删除
+      MessageBox.confirm('删除后不可恢复,是否删除？', '确认信息', {
+        distinguishCancelAndClose: true,
+        confirmButtonText: '删除',
+        cancelButtonText: '取消'
+      }).then(() => {
+        //
+        let params = {
+          table: this.tableName,
+          sys_ids: row.SYS_ID
+        }
+        deleteBySysIDs(params).then((res)=> {
+          let {data} = res
+          if (data > 0) {
+            // 删除成功
+            Message({
+              type: 'success',
+              message: "删除成功"
+            })
+            this.getListByPage()
+            console.log("删除成功")
+          }else{
+
+            console.error(res)
+          }
+        })
+        console.log("删除了")
+      })
+      .catch(action => {
+        console.log("取消了",action)
+      });
+
+      
     },
     tableRowClassName({row, rowIndex}) {
       if (rowIndex === 1) {
@@ -159,8 +247,13 @@ import DetailDialog from "../dialog/index"
       }
       return '';
     },
+    // 行选中状态
+    rowSelectionChange(val) {
+      this.$emit('selectedChange', val)
+    },
     // 获取分页数据内容
     getListByPage() {
+      this.loading = true
       let params = {
         page: this.currentPage,
         page_size: this.pageSize,
@@ -177,7 +270,7 @@ import DetailDialog from "../dialog/index"
           this.total = data.list == null ? 0 : data.total
           console.log(this.total, 'total')
         }
-        
+        this.loading = false
       })
     }
   },
@@ -198,8 +291,17 @@ import DetailDialog from "../dialog/index"
       //
       fieldsName: {},
       //
+      fields: {},
+      //
       detailData: {},
-
+      // 显示加载中
+      loading: false,
+      //
+      addOp: false,
+      // 选中的项
+      selectedRows: [],
+      // 弹窗标题
+      dialogTitle: '详情'
     }
   },
   created() {

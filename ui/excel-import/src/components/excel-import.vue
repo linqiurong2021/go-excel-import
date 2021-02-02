@@ -1,5 +1,6 @@
 <template>
  <div>
+  <!--表单选择-->
   <el-select v-model="currentTemplate" @change="changeTemplate">
     <el-option
       v-for="item in templateList"
@@ -8,31 +9,44 @@
       :value="item.NAME">
     </el-option>
   </el-select>
+  <!--工具栏-->
+  <tool-bar @newData="newData" @importData="importData" @exportData="exportData" @deleteData="deleteData" :delDisabled="delDisabled"/>
+  <!--搜索工具-->
   <search :config="searchConfig" :type="fieldType" :label="labelName"/>
-  <list :config="listConfig" :type="fieldType" :label="labelName"/>
+  <!--列表工具-->
+  <list ref="list" :config="listConfig" :type="fieldType" :label="labelName" @selectedChange="rowSelectedChange" :isAdd="isAdd" @addChange="addChange"/>
+
+
 </div>
 </template>
 
 <script lang="ts">
 import List from "./list/index.vue"
 import Search from "./search/index.vue"
-
+import ToolBar from "./toolbar/index.vue"
 import {getConfig} from '../api/excel-import.js'
 import { mapGetters } from "vuex"
-import {Select , Option} from "element-ui"
+import {Select , Option, MessageBox, Message} from "element-ui"
+import {deleteBySysIDs} from "../api/excel-import.js"
 export default {
   name: 'ExcelImport',
   components: {
     Search,List,
     ElSelect: Select,
     ElOption: Option,
+    ToolBar
   },
 
   computed: {
     ...mapGetters({
       tableName: "form/getTableName",
       tableConfigs: "form/getTableConfigs"
-    })
+    }),
+    // 禁用按钮状态
+    delDisabled() {
+      // 未选中则禁用
+      return this.selectedRows.length <=0 
+    }
   },
   created() {
     let tableName = "TemplateTest2"
@@ -69,6 +83,67 @@ export default {
       if(newVal) {
         this.$store.dispatch('form/setTableName', newVal)
       }
+    },
+    addChange(val) {
+      this.isAdd = val
+    },
+    newData() {
+      this.isAdd =  true
+    },
+      importData() {
+      console.log('importData')
+     
+    },
+      exportData() {
+      console.log('exportData')
+     
+    },
+    deleteData() {
+      //
+      if (this.selectedRows.length <=0) {
+        return
+      }
+      let ids = []
+      this.selectedRows.forEach(element => {
+          ids.push(element.SYS_ID)
+      });
+      // 提示是否需要删除
+      MessageBox.confirm('删除后不可恢复,是否删除？', '确认信息', {
+        distinguishCancelAndClose: true,
+        confirmButtonText: '删除',
+        cancelButtonText: '取消'
+      }).then(() => {
+        //
+        let params = {
+          table: this.tableName,
+          sys_ids: ids.join(",")
+        }
+        deleteBySysIDs(params).then((res)=> {
+          let {data} = res
+          if (data > 0) {
+            // 删除成功
+            Message({
+              type: 'success',
+              message: "删除成功"
+            })
+            this.$refs.list.getListByPage()
+            console.log("删除成功")
+          }else{
+
+            console.error(res)
+          }
+        })
+        console.log("删除了")
+      })
+      .catch(action => {
+        console.log("取消了",action)
+      });
+
+      console.log("deleteData")
+    },
+    //
+    rowSelectedChange(val) {
+      this.selectedRows = val
     }
   },
   data() {
@@ -84,7 +159,11 @@ export default {
         {"NAME":"TemplateTest","CNAME":"模板测试1","ORDER":1},
         {"NAME":"TemplateTest2","CNAME":"模板测试2","ORDER":2},
         {"NAME":"TemplateTest3","CNAME":"模板测试3","ORDER":3}
-      ]
+      ],
+      // checked 选中的项
+      selectedRows: [],
+      // 是否新增操作
+      isAdd: false
     }
   }
 }

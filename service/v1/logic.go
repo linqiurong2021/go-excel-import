@@ -278,3 +278,42 @@ func (l *Logic) GetFieldsName(tableName string) (data map[string]string, err err
 	}
 	return data, nil
 }
+
+// GetFields 获取详情
+func (l *Logic) GetFields(tableName string) (data map[string]string, err error) {
+	if tableName == "" {
+		return nil, errors.New("table name must")
+	}
+	data, err = l.service.GetFields(tableName)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// UpdateBySysID 更新
+func (l *Logic) UpdateBySysID(tableName string, data map[string]interface{}) (result sql.Result, err error) {
+	if tableName == "" {
+		return nil, errors.New("table name must")
+	}
+	return l.service.UpdateByID(tableName, data)
+}
+
+// DeleteBySysIDs 删除
+func (l *Logic) DeleteBySysIDs(tableName string, sysIDs string) (result sql.Result, err error) {
+	if tableName == "" {
+		return nil, errors.New("table name must")
+	}
+	if len(sysIDs) <= 0 {
+		return nil, errors.New("sys_ids must")
+	}
+	return l.service.DeleteBySysIDs(tableName, sysIDs)
+}
+
+// CreateData 新增
+func (l *Logic) CreateData(tableName string, data map[string]interface{}) (result sql.Result, err error) {
+	if tableName == "" {
+		return nil, errors.New("table name must")
+	}
+	return l.service.CreateData(tableName, data)
+}
