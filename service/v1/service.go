@@ -587,3 +587,52 @@ func (s *Service) GetFieldsName(tableName string) (fieldsType map[string]string,
 	return rowMap, nil
 
 }
+
+// GetSysTemplateByName 添加到模板列表
+func (s *Service) GetSysTemplateByName(tableName string) (result sql.Result, err error) {
+	//
+	getSQL := fmt.Sprintf("SELECT count(1) FROM SYS_TEMPLATE WHERE SYS_KEY='%s'", tableName)
+	//
+	return s.db.ExecuteSQLResult(getSQL)
+}
+
+// CreateSysTemplate 添加到模板列表
+func (s *Service) CreateSysTemplate(tableName string, tableCnName string) (result sql.Result, err error) {
+	//
+	createSQL := fmt.Sprintf("INSERT INTO SYS_TEMPLATE(SYS_KEY,SYS_NAME) VALUES('%s','%s')", tableName, tableCnName)
+	//
+	return s.db.ExecuteSQLResult(createSQL)
+}
+
+// GetSysTemplateList 获取到模板列表
+func (s *Service) GetSysTemplateList() (list []map[string]interface{}, err error) {
+	//
+	createSQL := "SELECT SYS_KEY,SYS_NAME FROM SYS_TEMPLATE ORDER BY SYS_ID"
+	//
+	rows, err := s.db.ExecuteSQLRows(createSQL)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	fields := []string{"SYS_KEY", "SYS_NAME"}
+	scanArgs := make([]interface{}, 2)
+	for i := range fields {
+		scanArgs[i] = &fields[i]
+	}
+
+	columns, _ := rows.Columns()
+	for rows.Next() {
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, err
+		}
+		item := make(map[string]interface{})
+		for i, data := range scanArgs {
+			item[columns[i]] = *data.(*string) //取实际类型
+		}
+		list = append(list, item)
+	}
+	fmt.Printf("##list:%+v##", list)
+	// 返回数据
+	return list, nil
+}

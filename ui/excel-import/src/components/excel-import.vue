@@ -4,13 +4,13 @@
   <el-select v-model="currentTemplate" @change="changeTemplate">
     <el-option
       v-for="item in templateList"
-      :key="item.NAME"
-      :label="item.CNAME"
-      :value="item.NAME">
+      :key="item.SYS_KEY"
+      :label="item.SYS_NAME"
+      :value="item.SYS_KEY">
     </el-option>
   </el-select>
   <!--工具栏-->
-  <tool-bar @newData="newData" @importData="importData" @exportData="exportData" @deleteData="deleteData" :delDisabled="delDisabled"/>
+  <tool-bar @newData="newData" @importData="importData" @exportData="exportData" @deleteData="deleteData" :delDisabled="delDisabled" @refresh="refresh"/>
   <!--搜索工具-->
   <search :config="searchConfig" :type="fieldType" :label="labelName"/>
   <!--列表工具-->
@@ -27,7 +27,7 @@ import ToolBar from "./toolbar/index.vue"
 import {getConfig} from '../api/excel-import.js'
 import { mapGetters } from "vuex"
 import {Select , Option, MessageBox, Message} from "element-ui"
-import {deleteBySysIDs} from "../api/excel-import.js"
+import {deleteBySysIDs, getTemplates} from "../api/excel-import.js"
 export default {
   name: 'ExcelImport',
   components: {
@@ -49,9 +49,7 @@ export default {
     }
   },
   created() {
-    let tableName = "TemplateTest2"
-    this.$store.dispatch("form/setTableName", tableName)
-    console.error(tableName,'tableName')
+    this.getTemplates()
   },
   watch: {
     tableName(newName,oldName){
@@ -78,6 +76,19 @@ export default {
     }
   },
   methods: {
+    getTemplates() {
+      getTemplates().then((res)=>{
+        let {data} = res
+        if (data) {
+          this.templateList = data
+          if(data[0] && data[0]['SYS_KEY']){
+            this.$store.dispatch("form/setTableName", data[0]['SYS_KEY'])
+          }
+          
+        }
+        console.log(res,'getTemplates')
+      })
+    },
     changeTemplate(newVal, oldVal){
       // console.log(newVal,'newVal')
       if(newVal) {
@@ -97,6 +108,17 @@ export default {
       exportData() {
       console.log('exportData')
      
+    },
+    // 刷新列表
+    refresh() {
+      //
+      this.refreshTable()
+      // 刷新模板列表
+      this.getTemplates()
+    },
+    // 
+    refreshTable() {
+      this.$refs.list.getListByPage()
     },
     deleteData() {
       //
@@ -126,8 +148,9 @@ export default {
               type: 'success',
               message: "删除成功"
             })
-            this.$refs.list.getListByPage()
-            console.log("删除成功")
+            // 刷新列表
+            this.refreshTable()
+            // console.log("删除成功")
           }else{
 
             console.error(res)

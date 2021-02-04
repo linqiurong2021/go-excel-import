@@ -169,7 +169,7 @@ export default {
             })
             this.dialogVisible = false
             this.formData = {} // 清除数据
-            this.$emit('updated')
+            this.$emit('refresh')
           }else{
             console.error(data)
           }
@@ -186,7 +186,7 @@ export default {
             })
             this.formData = {} // 清除数据
             this.dialogVisible = false
-            this.$emit('updated')
+            this.$emit('refresh')
           }else{
             console.error(data)
           }

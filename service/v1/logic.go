@@ -90,6 +90,7 @@ func (l *Logic) oldFieldHasNotNewFields(fields []string, newFields []string) (di
 func (l *Logic) CreateTable(templatePath string, needBackup bool) error {
 	// 如果不存在则直接创建
 	// createTableSQL, insertSQL, err := l.template.ReadTemplate(templatePath)
+	fmt.Printf("\n#template_path#%v\n", templatePath)
 	table, err := l.template.ReadTemplate(templatePath)
 	fmt.Printf("## %#v ##\n", table)
 	// 判断表是否存在
@@ -158,7 +159,12 @@ func (l *Logic) CreateTable(templatePath string, needBackup bool) error {
 			tx.Rollback()
 			return err
 		}
-
+		//
+		err = l.createSysTemplate(l.template.TableEnName, l.template.TableName)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 		// 事务提交
 		fmt.Printf("tableData %#v\n, Result %#v\n", table, result)
 		return tx.Commit()
@@ -316,4 +322,41 @@ func (l *Logic) CreateData(tableName string, data map[string]interface{}) (resul
 		return nil, errors.New("table name must")
 	}
 	return l.service.CreateData(tableName, data)
+}
+
+// createSysTemplate 新增模板
+func (l *Logic) createSysTemplate(tableName string, tableCnName string) (err error) {
+	if tableName == "" {
+		return errors.New("table name must")
+	}
+	if tableCnName == "" {
+		return errors.New("table chinese name must")
+	}
+	result, err := l.service.GetSysTemplateByName(tableName)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected > 0 {
+		errMsg := fmt.Sprintf("template %s exists", tableName)
+		return errors.New(errMsg)
+	}
+
+	result, err = l.service.CreateSysTemplate(tableName, tableCnName)
+	if err != nil {
+		return err
+	}
+	affected, err = result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	return
+}
+
+// GetSysTemplateList 获取模板列表
+func (l *Logic) GetSysTemplateList() ([]map[string]interface{}, error) {
+	return l.service.GetSysTemplateList()
 }

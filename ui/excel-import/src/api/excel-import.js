@@ -87,6 +87,26 @@ const createData = ( data ) => {
   })
 }
 
+// 获取已有模板列表
+const getTemplates = ( data ) => {
+  return axios.request({
+    url:"/getTemplates",
+    method: 'post',
+    data
+  })
+}
+
+
+
+// 导入数据
+const importData = ( data ) => {
+  return axios.request({
+    url:"/import",
+    method: 'post',
+    data
+  })
+}
+
 export {
   getConfig,
   getSelectOptions,
@@ -97,5 +117,7 @@ export {
   updateBySysID,
   deleteBySysIDs,
   getFields,
-  createData
+  createData,
+  importData,
+  getTemplates,
 }

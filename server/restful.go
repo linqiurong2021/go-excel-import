@@ -1,11 +1,16 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/linqiurong2021/go-excel-import/db"
 	v1 "github.com/linqiurong2021/go-excel-import/service/v1"
@@ -371,6 +376,77 @@ func (rest *Restful) CreateData(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// Import 导入
+func (rest *Restful) Import(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(32 << 20) // limit your max input length!
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	var buf bytes.Buffer
+	// in your case file would be fileupload
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	name := strings.Split(header.Filename, ".")
+	// Copy the file data to my buffer
+	io.Copy(&buf, file)
+
+	fmt.Printf("content: %v\n", buf.Bytes())
+
+	// do something else
+	path, err := os.Getwd()
+	if err != nil {
+		//
+		fmt.Fprintln(w, err)
+		return
+	}
+	suffix := name[len(name)-1]
+	if suffix != "xls" && suffix != "xlsx" {
+		fmt.Fprintln(w, "只支持xlsx 或 xls 文件格式")
+		return
+	}
+	filename := fmt.Sprintf("%s/uploads/%s_%d.%s", path, name[0], time.Now().Unix(), suffix)
+	fmt.Printf("path:%s\n", filename)
+
+	err = ioutil.WriteFile(filename, buf.Bytes(), 0644)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	// 重置
+	buf.Reset()
+	err = rest.logic.CreateTable(filename, false)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	fmt.Fprint(w, "success")
+	return
+}
+
+// Export 导出
+func (rest *Restful) Export(w http.ResponseWriter, r *http.Request) {
+	return
+}
+
+// GetTemplates 获取已有的模板
+func (rest *Restful) GetTemplates(w http.ResponseWriter, r *http.Request) {
+	list, err := rest.logic.GetSysTemplateList()
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	jsonData, err := json.Marshal(list)
+	if err != nil {
+		fmt.Fprintln(w, err)
+	}
+	fmt.Fprintln(w, string(jsonData))
+	return
+}
+
 // StartServer 启用Server
 func (rest *Restful) StartServer() {
 	// 获取下拉或单选或多选项
@@ -395,6 +471,12 @@ func (rest *Restful) StartServer() {
 	http.HandleFunc("/deleteBySysIDs", rest.DeleteBySysIDs)
 	// 新增
 	http.HandleFunc("/createData", rest.CreateData)
+	// 导入
+	http.HandleFunc("/import", rest.Import)
+	// 导出
+	http.HandleFunc("/export", rest.Export)
+	// 获取已有的模板
+	http.HandleFunc("/getTemplates", rest.GetTemplates)
 	fmt.Println("\n StartServer \n ")
 	//
 	err := http.ListenAndServe(":8000", nil)

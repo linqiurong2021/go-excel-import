@@ -39,7 +39,7 @@
       :total.sync="total">
     </el-pagination>
     <!--详情弹窗-->
-    <DetailDialog :title="dialogTitle" :types="fieldsType" :detail="detailData" :fields="fields" :names="fieldsName" ref="dialog" @updated="updated"/>
+    <DetailDialog :title="dialogTitle" :types="fieldsType" :detail="detailData" :fields="fields" :names="fieldsName" ref="dialog" @refresh="refresh"/>
  </div>
 </template>
 
@@ -154,7 +154,7 @@ import DetailDialog from "../dialog/index"
   methods: {
     
     // 更新成功后需要刷新
-    updated() {
+    refresh() {
       this.getListByPage()
     },
     getFieldsType(tableParams) {
@@ -224,7 +224,8 @@ import DetailDialog from "../dialog/index"
               type: 'success',
               message: "删除成功"
             })
-            this.getListByPage()
+            // 刷新页面
+            this.refresh()
             console.log("删除成功")
           }else{
 
