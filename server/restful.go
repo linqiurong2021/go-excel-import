@@ -427,8 +427,38 @@ func (rest *Restful) Import(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// ExportRequest 导出请求参数
+type ExportRequest struct {
+	Table  string `json:"table"`
+	SysIDs string `json:"sys_ids"`
+}
+
 // Export 导出
 func (rest *Restful) Export(w http.ResponseWriter, r *http.Request) {
+	// 获取body
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("read body err, %v\n", err)
+		return
+	}
+	// 列表请求数据
+	var exportRequest ExportRequest
+	if err := json.Unmarshal(body, &exportRequest); err != nil {
+		fmt.Fprintln(w, "json invalidate")
+		return
+	}
+	if exportRequest.Table == "" {
+		fmt.Fprintln(w, "table params must")
+		return
+	}
+	path, err := rest.logic.ExportData(exportRequest.Table, exportRequest.SysIDs)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+	//
+
+	fmt.Fprintln(w, path)
 	return
 }
 

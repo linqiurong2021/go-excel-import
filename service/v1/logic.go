@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -359,4 +360,33 @@ func (l *Logic) createSysTemplate(tableName string, tableCnName string) (err err
 // GetSysTemplateList 获取模板列表
 func (l *Logic) GetSysTemplateList() ([]map[string]interface{}, error) {
 	return l.service.GetSysTemplateList()
+}
+
+// ExportData 导出
+func (l *Logic) ExportData(tableName string, SysIDs string) (downloadPath string, err error) {
+	if tableName == "" {
+		return "", errors.New("table name must")
+	}
+	// 表备注(中文模板名称)
+	tableComment, err := l.service.GetTableComment(tableName)
+	if err != nil {
+		return "", err
+	}
+	fmt.Printf("\ntableComment:%s\n", tableComment)
+
+	// 配置数据与字段 还有字段名
+	configList, fields, err := l.service.GetConfigExport(tableName)
+	if err != nil {
+		return "", err
+	}
+	//
+	dataList, err := l.service.ExportData(tableName, SysIDs)
+	if err != nil {
+		return "", err
+	}
+	path, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	return l.template.WriteTemplate(path, tableComment, tableName, fields, configList, dataList)
 }

@@ -107,6 +107,16 @@ const importData = ( data ) => {
   })
 }
 
+// 导出数据
+const exportData = ( data ) => {
+  return axios.request({
+    url:"/export",
+    method: 'post',
+    data
+  })
+}
+
+
 export {
   getConfig,
   getSelectOptions,
@@ -120,4 +130,5 @@ export {
   createData,
   importData,
   getTemplates,
+  exportData,
 }

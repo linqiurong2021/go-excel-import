@@ -17,6 +17,8 @@ func main() {
 	if err != nil {
 		log.Fatal("init config error: ", err)
 	}
+
+	// testEndColumn()
 	// 数据库
 	db := db.NewDB()
 
@@ -60,6 +62,14 @@ func createService(db *db.DB) {
 	// for _, item := range data {
 	// 	fmt.Println(item)
 	// }
+}
+
+func testEndColumn() {
+
+	template := &v1.Template{}
+	//  []string{"1", "2", "3", "4", "5", "1", "2", "3", "4", "5", "1", "2", "3", "4", "5", "1", "2", "3", "4", "5", "1", "2", "3", "4", "5", "1", "2", "3", "4", "5", "1", "2", "3", "4", "5", "1", "2", "3", "4", "5"}
+	result := template.GetRowEndColunn(52, 1)
+	fmt.Printf("result:%s\n", result)
 }
 
 func createLogic(db *db.DB) {

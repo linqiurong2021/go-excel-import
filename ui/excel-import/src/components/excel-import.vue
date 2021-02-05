@@ -27,7 +27,7 @@ import ToolBar from "./toolbar/index.vue"
 import {getConfig} from '../api/excel-import.js'
 import { mapGetters } from "vuex"
 import {Select , Option, MessageBox, Message} from "element-ui"
-import {deleteBySysIDs, getTemplates} from "../api/excel-import.js"
+import {deleteBySysIDs, getTemplates,exportData} from "../api/excel-import.js"
 export default {
   name: 'ExcelImport',
   components: {
@@ -64,11 +64,13 @@ export default {
       })
     },
     tableConfigs(newConfig, oldConfig){
-      if (newConfig.length >= 3) {
-        this.fieldType = newConfig[0]
-        this.searchConfig = newConfig[1]
-        this.listConfig = newConfig[2]
-        this.labelName = newConfig[3]
+      console.log(newConfig,'newConfig')
+      if (newConfig.length >= 6) {
+        this.labelName = newConfig[0]
+        this.fieldType = newConfig[3]
+        this.searchConfig = newConfig[4]
+        this.listConfig = newConfig[5]
+    
         console.log(this.fieldType, this.searchConfig,this.listConfig,this.labelName)
       }else{
         console.log("table config error: length less than 4 items")
@@ -105,7 +107,40 @@ export default {
       console.log('importData')
      
     },
-      exportData() {
+    download(data,fileName) {
+      let url = window.URL.createObjectURL(new Blob([data]));
+      let link = document.createElement('a');
+      link.style.display = 'none';
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
+    exportData() {
+      //
+    
+      let ids = []
+      this.selectedRows.forEach(element => {
+          ids.push(element.SYS_ID)
+      });
+      let data = {
+        table: this.tableName,
+        sys_ids: ids.join(",")
+      }
+      exportData(data).then((res)=>{
+        console.log(res)
+        let {data} = res
+        if (data.indexOf(".xlsx")>0){
+          //
+          console.log(data,'data')
+          // window.open(data)
+          Message.success("下载成功")
+        }else{
+          Message.error(data)
+        } 
+
+      })
       console.log('exportData')
      
     },

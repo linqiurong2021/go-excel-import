@@ -84,25 +84,29 @@ func (s *Service) getParamsFieldsAndValues(searchFields []string, searchValues [
 	return strings.Trim(tmpWhere, " and ")
 }
 
-// GetAllData 获取所有数据
-func (s *Service) GetAllData(tableName string, params map[string]string) (rows *sql.Rows, err error) {
+// getAllData 获取所有数据
+func (s *Service) getAllData(tableName string, SysIDs string) (rows *sql.Rows, fields []string, err error) {
 	// 获取字段
-	s.getFields(tableName)
-	fields := "*"
+	fields, err = s.getFields(tableName)
+	if err != nil {
+		return nil, nil, err
+	}
+	// 删除SYS_ID字段
+	fields = fields[0 : len(fields)-1]
 	//
 	var getAllSQL string
 	// 获取参数中的条件
-	where := "" // s.getParamsFieldsAndValues([],[]])
-	if len(where) == 0 {
+	if SysIDs == "" {
 		// 获取所有的数据
-		getAllSQL = fmt.Sprintf("SELECT %s FROM %s ", tableName, fields)
+		getAllSQL = fmt.Sprintf("SELECT %s FROM %s ", strings.Join(fields, ","), tableName)
 	} else {
 		// 获取所有的数据
-		getAllSQL = fmt.Sprintf("SELECT %s FROM %s WHRE %s ", tableName, fields, where)
+		getAllSQL = fmt.Sprintf("SELECT %s FROM %s WHERE SYS_ID IN (%s) ", strings.Join(fields, ","), tableName, SysIDs)
 	}
 	rows, err = s.db.ExecuteSQLRows(getAllSQL)
+	fmt.Printf("\n###getAllSQL###\n%s\n", getAllSQL)
 	// 返回数据
-	return rows, nil
+	return rows, fields, nil
 }
 
 // GetDataByPageSize 分页(需要有参数)
@@ -635,4 +639,91 @@ func (s *Service) GetSysTemplateList() (list []map[string]interface{}, err error
 	fmt.Printf("##list:%+v##", list)
 	// 返回数据
 	return list, nil
+}
+
+// ExportData 导出数据
+func (s *Service) ExportData(tableName string, SysIDs string) (list []map[int]interface{}, err error) {
+	// 获取字段
+	rows, fields, err := s.getAllData(tableName, SysIDs)
+	//
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	scanArgs := make([]interface{}, len(fields))
+	for i := range fields {
+		scanArgs[i] = &fields[i]
+	}
+	for rows.Next() {
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, err
+		}
+		item := make(map[int]interface{})
+
+		for i, data := range scanArgs {
+			item[i] = *data.(*string) //取实际类型
+		}
+		list = append(list, item)
+	}
+	fmt.Printf("##list:%+v##", list)
+	// 返回数据
+	return list, nil
+}
+
+// GetConfigExport 获取导出配置信息
+func (s *Service) GetConfigExport(tableName string) (list []map[int]interface{}, fields []string, err error) {
+	// 字段
+	fields, err = s.getConfigFields(tableName)
+	// 删除SYS_ID的值
+	fields = fields[0 : len(fields)-1]
+	if err != nil {
+		return nil, nil, err
+	}
+	// 获取配置数据
+	getConfigSQL := fmt.Sprintf("SELECT %s FROM %s%s ORDER BY SYS_ID", strings.Join(fields, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
+	// fmt.Printf("getConfigSQL:%s\n", getConfigSQL)
+	// 执行
+	rows, err := s.db.ExecuteSQLRows(getConfigSQL)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+	scanArgs := make([]interface{}, len(fields))
+	for i := range fields {
+		scanArgs[i] = &fields[i]
+	}
+	for rows.Next() {
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, nil, err
+		}
+		item := make(map[int]interface{})
+
+		for i, data := range scanArgs {
+			item[i] = *data.(*string) //取实际类型
+		}
+		list = append(list, item)
+	}
+	fields = fields[0 : len(fields)-1]
+	// fmt.Printf("##list:%+v##", list)
+	return list, fields, nil
+}
+
+// GetTableComment 获取表备注(中文)
+func (s *Service) GetTableComment(tableName string) (comment string, err error) {
+
+	commentSQL := fmt.Sprintf("SELECT TABLE_COMMENT FROM information_schema.`TABLES` WHERE TABLE_NAME = '%s' and TABLE_SCHEMA = '%s'", tableName, conf.Conf.DBConfig.Sechma)
+	fmt.Printf("commentSQL:%s\n", commentSQL)
+	// 执行
+	rows, err := s.db.ExecuteSQLRows(commentSQL)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	if rows.Next() {
+		if err := rows.Scan(&comment); err != nil {
+			return "", err
+		}
+	}
+	return
 }
