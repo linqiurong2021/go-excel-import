@@ -264,7 +264,7 @@ func (l *Logic) GetDataByID(tableName string, sysID int64) (data map[string]inte
 }
 
 // GetFieldsType 获取详情
-func (l *Logic) GetFieldsType(tableName string) (data map[string]string, err error) {
+func (l *Logic) GetFieldsType(tableName string) (data map[string]interface{}, err error) {
 	if tableName == "" {
 		return nil, errors.New("table name must")
 	}
@@ -276,7 +276,7 @@ func (l *Logic) GetFieldsType(tableName string) (data map[string]string, err err
 }
 
 // GetFieldsName 获取详情
-func (l *Logic) GetFieldsName(tableName string) (data map[string]string, err error) {
+func (l *Logic) GetFieldsName(tableName string) (data map[string]interface{}, err error) {
 	if tableName == "" {
 		return nil, errors.New("table name must")
 	}

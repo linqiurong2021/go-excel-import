@@ -48,7 +48,6 @@ func (s *Service) getFields(tableName string) (fields []string, err error) {
 		}
 
 	}
-
 	return fields, nil
 }
 
@@ -193,25 +192,10 @@ func (s *Service) GetDataByID(tableName string, sysID int64) (list map[string]in
 	getSQL := fmt.Sprintf("SELECT %s FROM %s WHERE SYS_ID = %d", strings.Join(fields, ","), tableName, sysID)
 	fmt.Printf("GET DATA SQL:%#v\n", getSQL)
 	rows, err := s.db.ExecuteSQLRows(getSQL)
-	//
-	scanArgs := make([]interface{}, len(fields))
-	for i := range fields {
-		scanArgs[i] = &fields[i]
+	if err != nil {
+		return nil, err
 	}
-
-	item := make(map[string]interface{}, len(fields))
-
-	if rows.Next() {
-		columns, _ := rows.Columns()
-		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, err
-		}
-
-		for i, data := range scanArgs {
-			item[columns[i]] = *data.(*string) //取实际类型
-		}
-	}
-	return item, nil
+	return s.toMap(rows, fields)
 }
 
 // CreateData 新增一条数据
@@ -450,80 +434,18 @@ func (s *Service) GetListFieldConfig(configs []map[string]string) (jsonData stri
 	return string(json), nil
 }
 
-// GetSearchFieldsType 获取搜索列表类型
+// GetSearchFieldsType 获取搜索列表类型 WHERE SYS_ID = 5
 func (s *Service) GetSearchFieldsType(tableName string, searchFieldsCopy []string) (fieldsType []string, err error) {
 	fmt.Printf("fields: %#v\n", strings.Join(searchFieldsCopy, ","))
 	// 获取配置数据
-	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 4; ", strings.Join(searchFieldsCopy, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
+	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 5; ", strings.Join(searchFieldsCopy, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
 	// 执行
 	rows, err := s.db.ExecuteSQLRows(getConfigSQL)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	scanArgs := make([]interface{}, len(searchFieldsCopy))
-	for i := range searchFieldsCopy {
-		scanArgs[i] = &searchFieldsCopy[i]
-	}
-	if rows.Next() {
-		//
-		rows.Scan(scanArgs...)
-	}
-	for _, item := range scanArgs {
-		fieldsType = append(fieldsType, *item.(*string)) //
-	}
-	fmt.Printf("fieldsType: %#v\n", fieldsType)
-	return
-}
-
-// GetFieldsType 获取字段类型
-func (s *Service) GetFieldsType(tableName string) (fieldsType map[string]string, err error) {
-	fields, err := s.getFields(tableName)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("fields: %#v\n", strings.Join(fields, ","))
-	// 获取配置数据
-	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 4; ", strings.Join(fields, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
-	// 执行
-	rows, err := s.db.ExecuteSQLRows(getConfigSQL)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	// 获取类数据
-	columns, _ := rows.Columns()
-
-	// 以下代码来自官方 https://github.com/go-sql-driver/mysql/wiki/Examples
-	// Make a slice for the values
-	values := make([]sql.RawBytes, len(columns))
-	scanArgs := make([]interface{}, len(values))
-	for i := range values {
-		scanArgs[i] = &values[i]
-	}
-
-	var rowMap = make(map[string]string)
-	// Fetch rows
-	if rows.Next() {
-		err = rows.Scan(scanArgs...)
-		if err != nil {
-			panic(err.Error()) // proper error handling instead of panic in your app
-		}
-		var value string
-
-		for i, col := range values {
-			if col == nil {
-				value = "NULL"
-			} else {
-				value = string(col)
-			}
-			rowMap[columns[i]] = value
-			// fmt.Println(columns[i], ": ", value)
-		}
-
-	}
-	return rowMap, nil
+	//
+	return s.toList(rows, searchFieldsCopy)
 }
 
 // GetFields 获取字段类型
@@ -540,55 +462,32 @@ func (s *Service) GetFields(tableName string) (fieldsType map[string]string, err
 	return rowMap, nil
 }
 
-// GetFieldsName 获取字段名称
-func (s *Service) GetFieldsName(tableName string) (fieldsType map[string]string, err error) {
+// GetFieldsType 获取字段类型 SYS_ID = 4
+func (s *Service) GetFieldsType(tableName string) (fieldsType map[string]interface{}, err error) {
+	return s.GetConfigRowBySysID(tableName, 4)
+}
+
+// GetFieldsName 获取字段名称 SysID = 1
+func (s *Service) GetFieldsName(tableName string) (fieldsType map[string]interface{}, err error) {
+	// var SysID = 1
+	return s.GetConfigRowBySysID(tableName, 1)
+}
+
+// GetConfigRowBySysID 通过ID获取配置项
+func (s *Service) GetConfigRowBySysID(tableName string, SysID int64) (fieldsType map[string]interface{}, err error) {
 	fields, err := s.getFields(tableName)
 	if err != nil {
 		return nil, err
 	}
-
 	// 获取配置数据
-	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 1; ", strings.Join(fields, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
+	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = %d; ", strings.Join(fields, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix, SysID)
 	// 执行
 	fmt.Printf("\n\n\ngetConfigSQL: %#v\n\n\n", getConfigSQL)
 	rows, err := s.db.ExecuteSQLRows(getConfigSQL)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	// 获取类数据
-	columns, _ := rows.Columns()
-
-	// 以下代码来自官方 https://github.com/go-sql-driver/mysql/wiki/Examples
-	// Make a slice for the values
-	values := make([]sql.RawBytes, len(columns))
-	scanArgs := make([]interface{}, len(values))
-	for i := range values {
-		scanArgs[i] = &values[i]
-	}
-
-	var rowMap = make(map[string]string)
-	// Fetch rows
-	if rows.Next() {
-		err = rows.Scan(scanArgs...)
-		if err != nil {
-			panic(err.Error()) // proper error handling instead of panic in your app
-		}
-		var value string
-
-		for i, col := range values {
-			if col == nil {
-				value = "NULL"
-			} else {
-				value = string(col)
-			}
-			rowMap[columns[i]] = value
-			// fmt.Println(columns[i], ": ", value)
-		}
-
-	}
-	return rowMap, nil
+	return s.toMap(rows, fields)
 
 }
 
@@ -618,27 +517,10 @@ func (s *Service) GetSysTemplateList() (list []map[string]interface{}, err error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	fields := []string{"SYS_KEY", "SYS_NAME"}
-	scanArgs := make([]interface{}, 2)
-	for i := range fields {
-		scanArgs[i] = &fields[i]
-	}
 
-	columns, _ := rows.Columns()
-	for rows.Next() {
-		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, err
-		}
-		item := make(map[string]interface{})
-		for i, data := range scanArgs {
-			item[columns[i]] = *data.(*string) //取实际类型
-		}
-		list = append(list, item)
-	}
-	fmt.Printf("##list:%+v##", list)
+	fields := []string{"SYS_KEY", "SYS_NAME"}
 	// 返回数据
-	return list, nil
+	return s.toMapList(rows, fields)
 }
 
 // ExportData 导出数据
@@ -646,10 +528,15 @@ func (s *Service) ExportData(tableName string, SysIDs string) (list []map[int]in
 	// 获取字段
 	rows, fields, err := s.getAllData(tableName, SysIDs)
 	//
-
 	if err != nil {
 		return nil, err
 	}
+	// 返回数据
+	return s.toArrayList(rows, fields)
+}
+
+// 转数组列表
+func (s *Service) toArrayList(rows *sql.Rows, fields []string) (list []map[int]interface{}, err error) {
 	defer rows.Close()
 	scanArgs := make([]interface{}, len(fields))
 	for i := range fields {
@@ -666,9 +553,77 @@ func (s *Service) ExportData(tableName string, SysIDs string) (list []map[int]in
 		}
 		list = append(list, item)
 	}
-	fmt.Printf("##list:%+v##", list)
-	// 返回数据
-	return list, nil
+	return
+}
+
+// 转数组列表
+func (s *Service) toMapList(rows *sql.Rows, fields []string) (list []map[string]interface{}, err error) {
+	defer rows.Close()
+	scanArgs := make([]interface{}, len(fields))
+	for i := range fields {
+		scanArgs[i] = &fields[i]
+	}
+
+	columns, _ := rows.Columns()
+	for rows.Next() {
+		if err := rows.Scan(scanArgs...); err != nil {
+			return nil, err
+		}
+		item := make(map[string]interface{})
+		for i, data := range scanArgs {
+			item[columns[i]] = *data.(*string) //取实际类型
+		}
+		list = append(list, item)
+	}
+	return
+}
+
+// 转Map
+func (s *Service) toMap(rows *sql.Rows, fields []string) (list map[string]interface{}, err error) {
+	defer rows.Close()
+
+	// 获取类数据
+	columns, _ := rows.Columns()
+	values := make([]sql.RawBytes, len(columns))
+	scanArgs := make([]interface{}, len(values))
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
+	var rowMap = make(map[string]interface{})
+	// Fetch rows
+	if rows.Next() {
+		err = rows.Scan(scanArgs...)
+		if err != nil {
+			panic(err.Error()) // proper error handling instead of panic in your app
+		}
+		var value string
+		for i, col := range values {
+			if col == nil {
+				value = "NULL"
+			} else {
+				value = string(col)
+			}
+			rowMap[columns[i]] = value
+		}
+	}
+	return rowMap, nil
+}
+
+// 转MList
+func (s *Service) toList(rows *sql.Rows, fields []string) (returnFields []string, err error) {
+	defer rows.Close()
+	scanArgs := make([]interface{}, len(fields))
+	for i := range fields {
+		scanArgs[i] = &fields[i]
+	}
+	if rows.Next() {
+		//
+		rows.Scan(scanArgs...)
+	}
+	for _, item := range scanArgs {
+		returnFields = append(returnFields, *item.(*string)) //
+	}
+	return returnFields, nil
 }
 
 // GetConfigExport 获取导出配置信息
@@ -688,24 +643,8 @@ func (s *Service) GetConfigExport(tableName string) (list []map[int]interface{},
 	if err != nil {
 		return nil, nil, err
 	}
-	defer rows.Close()
-	scanArgs := make([]interface{}, len(fields))
-	for i := range fields {
-		scanArgs[i] = &fields[i]
-	}
-	for rows.Next() {
-		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, nil, err
-		}
-		item := make(map[int]interface{})
-
-		for i, data := range scanArgs {
-			item[i] = *data.(*string) //取实际类型
-		}
-		list = append(list, item)
-	}
-	fields = fields[0 : len(fields)-1]
-	// fmt.Printf("##list:%+v##", list)
+	// 转arrayList
+	list, err = s.toArrayList(rows, fields)
 	return list, fields, nil
 }
 
