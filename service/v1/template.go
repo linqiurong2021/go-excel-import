@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"time"
@@ -87,7 +88,7 @@ func (e *Template) GetRowEndColunn(column int, row int) (columnChar string) {
 }
 
 // WriteTemplate 写模板
-func (e *Template) WriteTemplate(path string, templateCnName string, templateName string, fields []string, configList []map[int]interface{}, dataList []map[int]interface{}) (downloadPath string, err error) {
+func (e *Template) WriteTemplate(path string, templateCnName string, templateName string, fields []string, configList []map[int]interface{}, dataList []map[int]interface{}) (absouletePath, downloadPath string, err error) {
 	// 创建excel
 	f := excelize.NewFile()
 	f.SetActiveSheet(0)
@@ -102,7 +103,7 @@ func (e *Template) WriteTemplate(path string, templateCnName string, templateNam
 	// 文字垂直居中 水平居中
 	style, err := f.NewStyle(`{"alignment":{"horizontal":"center","vertical":"ceneter"}}`)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	// 设置表头(名称与模板名称)
 	A1 := e.getColumn("A", 1)
@@ -143,12 +144,75 @@ func (e *Template) WriteTemplate(path string, templateCnName string, templateNam
 		}
 	}
 	downloadPath = fmt.Sprintf("/downloads/%s_%d.xlsx", templateCnName, time.Now().Unix())
+	absouletePath = fmt.Sprintf("%s%s", path, downloadPath)
 	// Save spreadsheet by the given path.
-	filename := fmt.Sprintf("%s%s", path, downloadPath)
+	filename := absouletePath
 	if err := f.SaveAs(filename); err != nil {
 		fmt.Println(err)
 	}
+	return
+}
 
+// WriteTemplate2 写模板
+func (e *Template) WriteTemplate2(path string, templateCnName string, templateName string, fields []string, configList []map[int]interface{}, dataList []map[int]interface{}) (fileName string, content *bytes.Reader, err error) {
+	// 创建excel
+	f := excelize.NewFile()
+	f.SetActiveSheet(0)
+	sheetName := "Sheet1"
+	// 定义A
+	const A int = 97
+	const CharCount int = 26
+	// 开始行数
+	var startRow int = 2 //
+	// 配置项行数
+	var configRow int
+	// 文字垂直居中 水平居中
+	style, err := f.NewStyle(`{"alignment":{"horizontal":"center","vertical":"ceneter"}}`)
+	if err != nil {
+		return "", nil, err
+	}
+	// 设置表头(名称与模板名称)
+	A1 := e.getColumn("A", 1)
+	A2 := e.getColumn("A", 2)
+	// len(fields)
+	A1EndColumn := e.GetRowEndColunn(len(fields), 1)
+	A2EndColumn := e.GetRowEndColunn(len(fields), 2)
+	// 合并单元格
+	f.MergeCell(sheetName, A1, A1EndColumn)
+	f.MergeCell(sheetName, A2, A2EndColumn)
+	// // 设置居中
+	f.SetCellStyle(sheetName, A1, A1EndColumn, style)
+	f.SetCellStyle(sheetName, A2, A2EndColumn, style)
+	// 设置表头(名称与模板名称)
+	f.SetCellValue(sheetName, A1, templateCnName) // A1
+	f.SetCellValue(sheetName, A2, templateName)   // A2
+	// 字段开始行
+	startRow = startRow + 1
+	// 设置配置
+	for row, item := range configList {
+		// col 从0开始
+		for col, val := range item {
+			// 计算第几列
+			column := e.GetRowEndColunn(col+1, row+startRow)
+			f.SetCellValue(sheetName, column, val)
+		}
+		configRow = configRow + 1
+	}
+	// 数据开始行
+	startRow = startRow + configRow
+	// 数据开始
+	// fmt.Printf("#########\n %d #######\n", configRow)
+	for row, item := range dataList {
+		for col, val := range item {
+			// 计算第几列
+			column := e.GetRowEndColunn(col+1, row+startRow)
+			f.SetCellValue(sheetName, column, val)
+		}
+	}
+	fileName = fmt.Sprintf("%s_%d.xlsx", templateCnName, time.Now().Unix())
+	var buffer bytes.Buffer
+	_ = f.Write(&buffer)
+	content = bytes.NewReader(buffer.Bytes())
 	return
 }
 

@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -363,30 +364,30 @@ func (l *Logic) GetSysTemplateList() ([]map[string]interface{}, error) {
 }
 
 // ExportData 导出
-func (l *Logic) ExportData(tableName string, SysIDs string) (downloadPath string, err error) {
+func (l *Logic) ExportData(tableName string, SysIDs string) (fileName string, reader *bytes.Reader, err error) {
 	if tableName == "" {
-		return "", errors.New("table name must")
+		return "", nil, errors.New("table name must")
 	}
 	// 表备注(中文模板名称)
 	tableComment, err := l.service.GetTableComment(tableName)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	fmt.Printf("\ntableComment:%s\n", tableComment)
 
 	// 配置数据与字段 还有字段名
 	configList, fields, err := l.service.GetConfigExport(tableName)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	//
 	dataList, err := l.service.ExportData(tableName, SysIDs)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	path, err := os.Getwd()
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return l.template.WriteTemplate(path, tableComment, tableName, fields, configList, dataList)
+	return l.template.WriteTemplate2(path, tableComment, tableName, fields, configList, dataList)
 }

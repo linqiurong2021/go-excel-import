@@ -451,14 +451,18 @@ func (rest *Restful) Export(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "table params must")
 		return
 	}
-	path, err := rest.logic.ExportData(exportRequest.Table, exportRequest.SysIDs)
+	fileName, content, err := rest.logic.ExportData(exportRequest.Table, exportRequest.SysIDs)
 	if err != nil {
 		fmt.Fprintln(w, err)
 		return
 	}
-	//
+	// fmt.Printf("fileName: %s\n", fileName)
+	// 添加头部
+	w.Header().Add("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fileName))
+	w.Header().Add("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	// 文件
+	http.ServeContent(w, r, fileName, time.Now(), content)
 
-	fmt.Fprintln(w, path)
 	return
 }
 

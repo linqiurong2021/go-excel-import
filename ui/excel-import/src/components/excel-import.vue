@@ -24,10 +24,9 @@
 import List from "./list/index.vue"
 import Search from "./search/index.vue"
 import ToolBar from "./toolbar/index.vue"
-import {getConfig} from '../api/excel-import.js'
 import { mapGetters } from "vuex"
 import {Select , Option, MessageBox, Message} from "element-ui"
-import {deleteBySysIDs, getTemplates,exportData} from "../api/excel-import.js"
+import {getConfig, deleteBySysIDs, getTemplates,exportData, download} from "../api/excel-import.js"
 export default {
   name: 'ExcelImport',
   components: {
@@ -128,19 +127,16 @@ export default {
         table: this.tableName,
         sys_ids: ids.join(",")
       }
-      
       exportData(data).then((res)=>{
-        console.log(res)
-        let {data} = res
-        if (data.indexOf(".xlsx")>0){
-          //
-          console.log(data,'data')
-          // window.open(data)
-          Message.success("下载成功")
-        }else{
-          Message.error(data)
-        } 
-
+        var filename = 'exportData.xlsx'
+        let contentDisposition = res.headers['content-disposition'];
+        if(contentDisposition){
+          let tmpArr = contentDisposition.split('=')
+          // 删除 前后的 ""
+          filename = tmpArr[1].substr(1,tmpArr[1].length-2)
+        }
+        // console.log(filename,'filename')
+        download(res.data, filename)
       })
       console.log('exportData')
      

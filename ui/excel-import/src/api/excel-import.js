@@ -112,8 +112,27 @@ const exportData = ( data ) => {
   return axios.request({
     url:"/export",
     method: 'post',
-    data
+    data,
+    responseType: 'blob'
   })
+}
+// 下载
+const download = (data, fileName)=>{
+
+  let url = window.URL.createObjectURL(data);
+  let link = document.createElement('a');
+  link.style.display = 'none';
+  link.href = url;
+  /**
+    * 添加属性,并赋指定的值 el.setAttribute('download','zzz')
+    * demo: <a href="abc.gif" download="zzz"> 
+    * download属性的值即使当前要导出的文件的文件名
+    * */
+  link.download = fileName
+  // link.setAttribute('download', fileName);
+  link.click();
+  // 释放创建的对象(创建的新的URL必须通过该方法释放)
+  window.URL.revokeObjectURL(url);
 }
 
 
@@ -131,4 +150,5 @@ export {
   importData,
   getTemplates,
   exportData,
+  download
 }
