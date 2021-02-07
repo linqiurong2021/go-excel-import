@@ -454,7 +454,7 @@ func (s *Service) GetListFieldConfig(configs []map[string]string) (jsonData stri
 func (s *Service) GetSearchFieldsType(tableName string, searchFieldsCopy []string) (fieldsType []string, err error) {
 	fmt.Printf("fields: %#v\n", strings.Join(searchFieldsCopy, ","))
 	// 获取配置数据
-	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 1; ", strings.Join(searchFieldsCopy, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
+	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 4; ", strings.Join(searchFieldsCopy, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
 	// 执行
 	rows, err := s.db.ExecuteSQLRows(getConfigSQL)
 	if err != nil {
@@ -484,7 +484,7 @@ func (s *Service) GetFieldsType(tableName string) (fieldsType map[string]string,
 	}
 	fmt.Printf("fields: %#v\n", strings.Join(fields, ","))
 	// 获取配置数据
-	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 1; ", strings.Join(fields, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
+	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 4; ", strings.Join(fields, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
 	// 执行
 	rows, err := s.db.ExecuteSQLRows(getConfigSQL)
 	if err != nil {
@@ -540,7 +540,7 @@ func (s *Service) GetFields(tableName string) (fieldsType map[string]string, err
 	return rowMap, nil
 }
 
-// GetFieldsName 获取字段类型
+// GetFieldsName 获取字段名称
 func (s *Service) GetFieldsName(tableName string) (fieldsType map[string]string, err error) {
 	fields, err := s.getFields(tableName)
 	if err != nil {
@@ -548,7 +548,7 @@ func (s *Service) GetFieldsName(tableName string) (fieldsType map[string]string,
 	}
 
 	// 获取配置数据
-	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 4; ", strings.Join(fields, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
+	getConfigSQL := fmt.Sprintf("SELECT %s FROM `%s%s` WHERE SYS_ID = 1; ", strings.Join(fields, ","), tableName, conf.Conf.DBConfig.ConfigTableSuffix)
 	// 执行
 	fmt.Printf("\n\n\ngetConfigSQL: %#v\n\n\n", getConfigSQL)
 	rows, err := s.db.ExecuteSQLRows(getConfigSQL)

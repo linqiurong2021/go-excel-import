@@ -128,6 +128,7 @@ export default {
         table: this.tableName,
         sys_ids: ids.join(",")
       }
+      
       exportData(data).then((res)=>{
         console.log(res)
         let {data} = res
