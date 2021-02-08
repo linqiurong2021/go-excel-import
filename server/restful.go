@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/linqiurong2021/go-excel-import/conf"
 	"github.com/linqiurong2021/go-excel-import/db"
 	v1 "github.com/linqiurong2021/go-excel-import/service/v1"
 )
@@ -513,7 +514,7 @@ func (rest *Restful) StartServer() {
 	http.HandleFunc("/getTemplates", rest.GetTemplates)
 	fmt.Println("\n StartServer \n ")
 	//
-	err := http.ListenAndServe(":8000", nil)
+	err := http.ListenAndServe(conf.Conf.AppConfig.Port, nil)
 	if err != nil {
 		fmt.Printf("http listen failed %s\n", err)
 	}
