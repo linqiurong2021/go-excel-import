@@ -1,0 +1,82 @@
+/**
+ * @ Author: linqiurong
+ * @ Create Time: 2020-09-17 09:19:53
+ * @ Modified by: linqiurong
+ * @ Modified time: 2020-10-17 10:17:44
+ * @ Description: 默认样式
+ */
+
+div.egin-widget,.leaflet-control-zoom a,
+.leaflet-control-zoom a:hover{
+  width: 30px;
+  height: 30px;
+  background: #000000;
+  opacity: 0.8;
+  color: #ffffff;
+  margin-bottom: 0px;
+  text-align: center;
+  line-height: 30px;
+  cursor: pointer;
+}
+
+div.egin-widget.active{
+  background: rgba(24, 144, 255, 1);
+  color: #ffffff
+}
+div.egin-icon i{
+  font-size: 20px;
+}
+
+div.base-map-layer {
+  position: absolute;
+  bottom: 0;
+  height: 110px;
+}
+div.basemap-layer-item{
+  cursor: pointer;
+}
+
+.egin-hide {
+  display: none;
+}
+
+.egin-show {
+  display: block;
+}
+
+
+
+div.egin-legend {
+  left: 10px;
+  position: absolute;
+  z-index: 400;
+  background: #ffffff;
+  /* opacity: 0.8; */
+  min-height: 30px;
+  max-height: 300px;
+  overflow: scroll;
+  bottom: 10px;
+  min-width: 30px;
+  cursor: pointer;
+  line-height: 30px;
+  text-align: center;
+}
+
+div.layer-bar{
+  display: flex;
+}
+div.layer-bar i {
+  cursor: pointer;
+}
+
+div.item-style{
+  width: 20px;
+  height: 20px;
+}
+div.egin-legend-item{
+  display: flex;
+}
+/** 默认打印不显示  使用自已的打印按钮**/
+div.leaflet-control-easyPrint {
+  display: none;
+}

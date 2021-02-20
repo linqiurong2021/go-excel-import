@@ -1,0 +1,35 @@
+/**
+icon 样式
+**/
+
+/** icon */
+i[class^=icon] {
+  display: inline-block;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+}
+
+/** 偏移 */
+.mb--5 {
+  margin-bottom: -5px;
+}
+.mr-5 {
+  margin-right: 5px;
+}
+/** 尺寸 */
+.icon-size-21 {
+  width: 21px;
+  height: 21px
+}
+.svg {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+}
+/** svg 图标 **/
+.aside-svg {
+  height: 21px;
+  width: 21px;
+}
+
+/** png 图标 */

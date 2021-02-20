@@ -34,7 +34,7 @@ module.exports = {
     // css预设器配置项
     loaderOptions: {
       scss: {
-        prependData: `@import "./src/styles/main.scss";`
+        additionalData: `@import "./src/styles/main.scss";`
       }
     }
   },
