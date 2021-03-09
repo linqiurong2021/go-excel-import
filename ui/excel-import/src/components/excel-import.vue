@@ -21,9 +21,9 @@
 </template>
 
 <script lang="ts">
-import List from "./list/index.vue"
-import Search from "./search/index.vue"
-import ToolBar from "./toolbar/index.vue"
+import List from "./map/list/index.vue"
+import Search from "./map/search/index.vue"
+import ToolBar from "./map/toolbar/index.vue"
 import { mapGetters } from "vuex"
 import {Select , Option, MessageBox, Message} from "element-ui"
 import {getConfig, deleteBySysIDs, getTemplates,exportData, download} from "../api/excel-import.js"

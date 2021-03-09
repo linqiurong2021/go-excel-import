@@ -35,8 +35,8 @@
 
 <script>
 import {Dialog, Button, Form, FormItem, Input, Select, Option, Message} from "element-ui"
-import {FieldType,SearchField} from "../../utils/const.js"
-import {getSelectOptions, updateBySysID, createData} from "../../api/excel-import.js"
+import {FieldType,SearchField} from "../../../utils/const.js"
+import {getSelectOptions, updateBySysID, createData} from "../../../api/excel-import.js"
 import { mapGetters } from "vuex"
 import newItem from "./newItem"
 export default {

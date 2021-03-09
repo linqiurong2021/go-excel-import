@@ -17,8 +17,8 @@
 
 <script>
 import { Input, Select, Button, Option} from "element-ui"
-import {IgnoreFields, FieldType,SearchField} from "../../utils/const.js"
-import {getSelectOptions} from '../../api/excel-import.js'
+import {IgnoreFields, FieldType,SearchField} from "../../../utils/const.js"
+import {getSelectOptions} from '../../../api/excel-import.js'
 import { mapGetters } from "vuex"
 export default {
   name: "Search",

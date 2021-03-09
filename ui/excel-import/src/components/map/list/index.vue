@@ -45,8 +45,8 @@
 
 <script>
 import {Table, TableColumn, Pagination, Button, Popconfirm,MessageBox, Message} from "element-ui"
-import {ListField} from '../../utils/const.js'
-import {getListByPage, getDataByID, getFieldsType,getFieldsName, deleteBySysIDs, getFields} from '../../api/excel-import.js'
+import {ListField} from '../../../utils/const.js'
+import {getListByPage, getDataByID, getFieldsType,getFieldsName, deleteBySysIDs, getFields} from '../../../api/excel-import.js'
 import { mapGetters } from 'vuex'
 
 import DetailDialog from "../dialog/index"

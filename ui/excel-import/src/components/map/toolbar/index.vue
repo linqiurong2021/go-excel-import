@@ -17,7 +17,7 @@
 
 <script>
 import {Button, Upload, Message} from "element-ui"
-import { importData } from '../../api/excel-import';
+import { importData } from '../../../api/excel-import';
 
 export default {
   name: "ToolBar",
